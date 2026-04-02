@@ -179,7 +179,8 @@ else
         if (!_isAdmin && log.UserId != _userId)
             return;
 
-        var dataRoot = Config["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+        var dataRoot = PlatformDefaults.ConfigValueOrDefault(
+            Config["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
         var outputRoot = Path.GetFullPath(Path.Combine(dataRoot, "Output"));
         var filePath = Path.GetFullPath(Path.Combine(outputRoot, log.OutputFileName));
 

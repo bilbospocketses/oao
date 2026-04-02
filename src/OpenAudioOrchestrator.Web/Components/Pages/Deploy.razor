@@ -115,7 +115,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var dataRoot = Config["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+        var dataRoot = PlatformDefaults.ConfigValueOrDefault(
+            Config["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
         var defaultImage = Config["OpenAudioOrchestrator:DefaultImageTag"] ?? "fishaudio/fish-speech:server-cuda";
 
         _form.CheckpointPath = Path.Combine(dataRoot, "Checkpoints", "s2-pro");
@@ -145,7 +146,8 @@
         }
 
         // Validate checkpoint path is within the Checkpoints directory
-        var dataRoot = Config["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+        var dataRoot = PlatformDefaults.ConfigValueOrDefault(
+            Config["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
         var checkpointsRoot = Path.GetFullPath(Path.Combine(dataRoot, "Checkpoints"));
         var resolvedPath = Path.GetFullPath(_form.CheckpointPath!);
         if (!resolvedPath.StartsWith(checkpointsRoot + Path.DirectorySeparatorChar)
