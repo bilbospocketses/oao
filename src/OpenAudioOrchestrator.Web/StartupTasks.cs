@@ -26,7 +26,9 @@ public static class StartupTasks
     private static async Task RunMigrationsAsync(WebApplication app)
     {
         // Ensure the database directory exists before SQLite tries to create the file
-        var connectionString = app.Configuration.GetConnectionString("Default");
+        var connectionString = PlatformDefaults.ConfigValueOrDefault(
+            app.Configuration.GetConnectionString("Default"),
+            $"Data Source={PlatformDefaults.DbPath}");
         if (connectionString is not null)
         {
             var prefix = "Data Source=";
@@ -80,7 +82,9 @@ public static class StartupTasks
 
     private static void RestrictDatabaseFilePermissions(WebApplication app)
     {
-        var connectionString = app.Configuration.GetConnectionString("Default");
+        var connectionString = PlatformDefaults.ConfigValueOrDefault(
+            app.Configuration.GetConnectionString("Default"),
+            $"Data Source={PlatformDefaults.DbPath}");
         if (connectionString is null) return;
 
         // Extract the file path from "Data Source=..."
@@ -136,7 +140,9 @@ public static class StartupTasks
     /// </summary>
     private static void CleanupOldDatabase(WebApplication app)
     {
-        var connectionString = app.Configuration.GetConnectionString("Default");
+        var connectionString = PlatformDefaults.ConfigValueOrDefault(
+            app.Configuration.GetConnectionString("Default"),
+            $"Data Source={PlatformDefaults.DbPath}");
         if (connectionString is null) return;
 
         var dataSourcePrefix = "Data Source=";
