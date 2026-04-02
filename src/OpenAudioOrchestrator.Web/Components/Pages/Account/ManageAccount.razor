@@ -1,0 +1,95 @@
+@page "/account"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<AppUser> UserManager
+@inject SignInManager<AppUser> SignInManager
+@inject NavigationManager Nav
+
+<PageTitle>My Account — Open Audio Orchestrator</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h3>My Account</h3>
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert alert-success">@_message</div>
+        }
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        @if (_user is not null)
+        {
+            <div class="card border-secondary mb-3">
+                <div class="card-body">
+                    <h5>Display Name</h5>
+                    <EditForm Model="_displayModel" OnValidSubmit="UpdateDisplayName" FormName="display-name">
+                        <div class="input-group">
+                            <InputText @bind-Value="_displayModel.DisplayName" class="form-control border-secondary" />
+                            <button type="submit" class="btn btn-outline-primary">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+
+            <div class="card border-secondary mb-3">
+                <div class="card-body">
+                    <h5>Security</h5>
+                    <p>TOTP: <span class="badge bg-success">Enabled</span></p>
+                    <a href="/account/change-password" class="btn btn-outline-light me-2">Change Password</a>
+                    <a href="/account/setup-totp" class="btn btn-outline-light">Regenerate TOTP Key</a>
+                </div>
+            </div>
+
+            <div class="card border-secondary">
+                <div class="card-body">
+                    <h5>Session</h5>
+                    <form method="post" action="/api/auth/signout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="btn btn-outline-danger">Sign Out</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private AppUser? _user;
+    private DisplayModel _displayModel = new();
+    private string? _message;
+    private string? _error;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private sealed class DisplayModel
+    {
+        public string DisplayName { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        _user = await UserManager.GetUserAsync(state.User);
+        if (_user is not null)
+            _displayModel.DisplayName = _user.DisplayName;
+    }
+
+    private async Task UpdateDisplayName()
+    {
+        _message = null;
+        _error = null;
+        if (_user is null) return;
+
+        _user.DisplayName = _displayModel.DisplayName;
+        var result = await UserManager.UpdateAsync(_user);
+        if (result.Succeeded)
+            _message = "Display name updated.";
+        else
+            _error = string.Join(" ", result.Errors.Select(e => e.Description));
+    }
+
+}

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="src/FishAudioOrchestrator.Web/wwwroot/logo.png" alt="Fish Audio Orchestrator" width="128" />
+  <img src="src/OpenAudioOrchestrator.Web/wwwroot/logo.png" alt="Open Audio Orchestrator" width="128" />
 </p>
 
-# Fish Audio Orchestrator
+# Open Audio Orchestrator
 
 > **This project is an independent open-source tool and is not affiliated with, sponsored by, or endorsed by the Fish Audio team.**
 
@@ -12,7 +12,7 @@ A local Blazor Server dashboard for managing Fish Speech Docker containers with 
 
 ## Overview
 
-Fish Audio Orchestrator runs locally on Windows (Linux testing and instructions coming soon...) and manages [Fish Speech](https://github.com/fishaudio/fish-speech) Docker containers via Docker Desktop (Windows) and Docker (Linux). It provides a web interface for deploying TTS models, managing a voice reference library, generating speech via a background job queue, and monitoring container health and GPU metrics in real time.
+Open Audio Orchestrator runs locally on Windows (Linux testing and instructions coming soon...) and manages [Fish Speech](https://github.com/fishaudio/fish-speech) Docker containers via Docker Desktop (Windows) and Docker (Linux). It provides a web interface for deploying TTS models, managing a voice reference library, generating speech via a background job queue, and monitoring container health and GPU metrics in real time.
 
 ## Features
 
@@ -47,9 +47,9 @@ Fish Audio Orchestrator runs locally on Windows (Linux testing and instructions 
 1. **Clone and run**
 
    ```bash
-   git clone https://github.com/bilbospocketses/FishAudioOrchestrator.git
-   cd FishAudioOrchestrator
-   dotnet run --project src/FishAudioOrchestrator.Web
+   git clone https://github.com/bilbospocketses/OpenAudioOrchestrator.git
+   cd OpenAudioOrchestrator
+   dotnet run --project src/OpenAudioOrchestrator.Web
    ```
 
 2. **Complete the setup wizard**
@@ -86,27 +86,27 @@ Fish Audio Orchestrator runs locally on Windows (Linux testing and instructions 
 
 ## Configuration
 
-Most settings are configured automatically by the setup wizard. For advanced use or manual changes, edit `src/FishAudioOrchestrator.Web/appsettings.json`:
+Most settings are configured automatically by the setup wizard. For advanced use or manual changes, edit `src/OpenAudioOrchestrator.Web/appsettings.json`:
 
 | Key | Description | Default |
 |-----|-------------|---------|
-| `ConnectionStrings:Default` | SQLite database path | `C:\MyOpenAudioProj\fishorch.db` |
-| `FishOrchestrator:DockerEndpoint` | Docker API endpoint | `npipe://./pipe/docker_engine` |
-| `FishOrchestrator:DataRoot` | Root directory for data files | `C:\MyOpenAudioProj` |
-| `FishOrchestrator:PortRange:Start` | Start of container port range | `9001` |
-| `FishOrchestrator:PortRange:End` | End of container port range | `9099` |
-| `FishOrchestrator:DefaultImageTag` | Default Fish Speech Docker image | `fishaudio/fish-speech:server-cuda-v2.0.0-beta` |
-| `FishOrchestrator:DockerNetworkName` | Docker bridge network name | `fish-orchestrator` |
-| `FishOrchestrator:HealthCheckIntervalSeconds` | Health check frequency (seconds) | `30` |
-| `FishOrchestrator:Domain` | FQDN for Let's Encrypt (blank = localhost) | `""` |
-| `FishOrchestrator:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) | `""` |
-| `FishOrchestrator:AdminUser` | Seed admin username (env var override) | `""` |
-| `FishOrchestrator:AdminPassword` | Seed admin password (env var override) | `""` |
+| `ConnectionStrings:Default` | SQLite database path | `C:\MyOpenAudioProj\AudioOrchestrator.db` |
+| `OpenAudioOrchestrator:DockerEndpoint` | Docker API endpoint | `npipe://./pipe/docker_engine` |
+| `OpenAudioOrchestrator:DataRoot` | Root directory for data files | `C:\MyOpenAudioProj` |
+| `OpenAudioOrchestrator:PortRange:Start` | Start of container port range | `9001` |
+| `OpenAudioOrchestrator:PortRange:End` | End of container port range | `9099` |
+| `OpenAudioOrchestrator:DefaultImageTag` | Default Fish Speech Docker image | `fishaudio/fish-speech:server-cuda-v2.0.0-beta` |
+| `OpenAudioOrchestrator:DockerNetworkName` | Docker bridge network name | `oao-network` |
+| `OpenAudioOrchestrator:HealthCheckIntervalSeconds` | Health check frequency (seconds) | `30` |
+| `OpenAudioOrchestrator:Domain` | FQDN for Let's Encrypt (blank = localhost) | `""` |
+| `OpenAudioOrchestrator:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) | `""` |
+| `OpenAudioOrchestrator:AdminUser` | Seed admin username (env var override) | `""` |
+| `OpenAudioOrchestrator:AdminPassword` | Seed admin password (env var override) | `""` |
 | `LettuceEncrypt:AcceptTermsOfService` | Accept Let's Encrypt terms | `true` |
 | `LettuceEncrypt:DomainNames` | Domain names for certificate | `[]` |
 | `LettuceEncrypt:EmailAddress` | Email for certificate renewal notices | `""` |
 
-For automated deployments, set `FishOrchestrator__AdminUser` and `FishOrchestrator__AdminPassword` as environment variables to seed the admin account on first run (TOTP setup required on first login).
+For automated deployments, set `OpenAudioOrchestrator__AdminUser` and `OpenAudioOrchestrator__AdminPassword` as environment variables to seed the admin account on first run (TOTP setup required on first login).
 
 ## Architecture
 
@@ -129,10 +129,10 @@ Design specifications are in [`docs/superpowers/specs/`](docs/superpowers/specs/
 dotnet build
 
 # Run in development mode
-dotnet run --project src/FishAudioOrchestrator.Web
+dotnet run --project src/OpenAudioOrchestrator.Web
 
 # Add an EF Core migration
-cd src/FishAudioOrchestrator.Web
+cd src/OpenAudioOrchestrator.Web
 dotnet ef migrations add <MigrationName>
 ```
 

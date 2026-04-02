@@ -1,0 +1,197 @@
+@page "/history"
+@attribute [Authorize]
+@inject IDbContextFactory<AppDbContext> DbFactory
+@using Microsoft.EntityFrameworkCore
+@using OpenAudioOrchestrator.Web.Data
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<AppUser> UserManager
+@inject IConfiguration Config
+@using OpenAudioOrchestrator.Web.Hubs
+@using OpenAudioOrchestrator.Web.Services
+@inject OrchestratorEventBus EventBus
+@implements IDisposable
+
+<PageTitle>Generation History — Open Audio Orchestrator</PageTitle>
+
+<h2>Generation History</h2>
+
+@if (_logs.Count == 0)
+{
+    <div class="alert alert-info">
+        No generations yet. Use the <a href="/playground">TTS Playground</a> to generate speech.
+    </div>
+}
+else
+{
+    <ConfirmDialog @ref="_confirmDialog" Title="Delete Generation"
+                    Message="@_confirmMessage" ConfirmText="Delete"
+                    OnConfirm="_confirmAction" />
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Model</th>
+                <th>Voice</th>
+                <th>Text</th>
+                <th>Format</th>
+                <th>Duration</th>
+                <th>Audio</th>
+                <th>Download</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in _logs)
+            {
+                <tr>
+                    <td><small>@log.CreatedAt.ToLocalTime().ToString("g")</small></td>
+                    <td>@log.ModelProfile.Name</td>
+                    <td>@(log.ReferenceVoice?.DisplayName ?? "—")</td>
+                    <td><small class="text-muted">@Truncate(log.InputText, 60)</small></td>
+                    <td><code>@log.Format</code></td>
+                    <td>@log.DurationMs ms</td>
+                    <td>
+                        <audio controls preload="none" style="height: 30px; max-width: 200px;">
+                            <source src="/audio/output/@log.OutputFileName" />
+                        </audio>
+                    </td>
+                    <td>
+                        <a href="/audio/output/@log.OutputFileName" download
+                           class="btn btn-sm btn-outline-primary">DL</a>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RequestDelete(log)">Del</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (_hasMore)
+    {
+        <div class="text-center my-3">
+            <button class="btn btn-outline-light" @onclick="LoadMoreAsync" disabled="@_loadingMore">
+                @(_loadingMore ? "Loading..." : "Load More")
+            </button>
+        </div>
+    }
+}
+
+@code {
+    private const int PageSize = 50;
+    private List<GenerationLog> _logs = new();
+    private bool _hasMore;
+    private bool _loadingMore;
+    private bool _isAdmin;
+    private string? _userId;
+    private ConfirmDialog _confirmDialog = null!;
+    private string _confirmMessage = "";
+    private EventCallback _confirmAction;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        var user = await UserManager.GetUserAsync(state.User);
+        _isAdmin = state.User.IsInRole("Admin");
+        _userId = user?.Id;
+
+        await LoadPageAsync();
+
+        EventBus.OnTtsNotification += OnTtsNotificationRaw;
+    }
+
+    private async Task LoadPageAsync(int? beforeId = null)
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        IQueryable<GenerationLog> query = db.GenerationLogs
+            .Include(l => l.ModelProfile)
+            .Include(l => l.ReferenceVoice);
+
+        if (!_isAdmin && _userId is not null)
+        {
+            query = query.Where(l => l.UserId == _userId);
+        }
+
+        query = query.OrderByDescending(l => l.Id);
+
+        if (beforeId.HasValue)
+        {
+            query = query.Where(l => l.Id < beforeId.Value);
+        }
+
+        var results = await query.Take(PageSize + 1).ToListAsync();
+        _hasMore = results.Count > PageSize;
+        if (_hasMore) results.RemoveAt(results.Count - 1);
+
+        if (beforeId.HasValue)
+            _logs.AddRange(results);
+        else
+            _logs = results;
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        _loadingMore = true;
+        var cursor = _logs.Last().Id;
+        await LoadPageAsync(cursor);
+        _loadingMore = false;
+    }
+
+    private void OnTtsNotificationRaw(TtsNotificationEvent notification)
+    {
+        if (!notification.Success) return;
+
+        _ = InvokeAsync(async () =>
+        {
+            await using var db = await DbFactory.CreateDbContextAsync();
+            var newLog = await db.GenerationLogs
+                .Include(l => l.ModelProfile)
+                .Include(l => l.ReferenceVoice)
+                .FirstOrDefaultAsync(l => l.OutputFileName == notification.OutputFileName);
+
+            if (newLog is not null && !_logs.Any(l => l.Id == newLog.Id))
+            {
+                _logs.Insert(0, newLog);
+                StateHasChanged();
+            }
+        });
+    }
+
+    public void Dispose()
+    {
+        EventBus.OnTtsNotification -= OnTtsNotificationRaw;
+    }
+
+    private void RequestDelete(GenerationLog log)
+    {
+        _confirmMessage = $"Delete generation \"{Truncate(log.InputText, 30)}\" and its audio file?";
+        _confirmAction = EventCallback.Factory.Create(this, () => DeleteEntry(log));
+        _confirmDialog.Show();
+    }
+
+    private async Task DeleteEntry(GenerationLog log)
+    {
+        // Only allow deletion of own entries (or any entry for admins)
+        if (!_isAdmin && log.UserId != _userId)
+            return;
+
+        var dataRoot = Config["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+        var outputRoot = Path.GetFullPath(Path.Combine(dataRoot, "Output"));
+        var filePath = Path.GetFullPath(Path.Combine(outputRoot, log.OutputFileName));
+
+        if (filePath.StartsWith(outputRoot + Path.DirectorySeparatorChar) && File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        db.GenerationLogs.Remove(log);
+        await db.SaveChangesAsync();
+        _logs.Remove(log);
+    }
+
+}

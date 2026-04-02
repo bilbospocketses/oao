@@ -1,0 +1,343 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory
+@using OpenAudioOrchestrator.Web.Data
+@using OpenAudioOrchestrator.Web.Middleware
+@inject UserManager<AppUser> UserManager
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+@inject IMemoryCache MemoryCache
+
+<PageTitle>User Management — Open Audio Orchestrator</PageTitle>
+
+<h3>User Management</h3>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-success alert-dismissible">@_message</div>
+}
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger alert-dismissible">@_error</div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <table class="table table-dark table-striped">
+            <thead>
+                <tr>
+                    <th>Display Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>TOTP</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in _users)
+                {
+                    <tr>
+                        <td>@u.DisplayName</td>
+                        <td>@u.UserName</td>
+                        <td>@u.Role</td>
+                        <td>@(u.TotpEnabled ? "Yes" : "No")</td>
+                        <td>@u.CreatedAt.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-light" @onclick="() => StartEdit(u)">Edit</button>
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => StartResetPassword(u)">Reset PW</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => StartDelete(u)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-4">
+        @if (_showCreateForm)
+        {
+            <div class="card border-secondary">
+                <div class="card-body">
+                    <h5>Create User</h5>
+                    <div class="mb-2">
+                        <label class="form-label">Username</label>
+                        <InputText @bind-Value="_createModel.Username" class="form-control border-secondary" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Display Name</label>
+                        <InputText @bind-Value="_createModel.DisplayName" class="form-control border-secondary" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Temporary Password</label>
+                        <InputText @bind-Value="_createModel.Password" type="password" class="form-control border-secondary" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Role</label>
+                        <InputSelect @bind-Value="_createModel.Role" class="form-select border-secondary">
+                            <option value="User">User</option>
+                            <option value="Admin">Admin</option>
+                        </InputSelect>
+                    </div>
+                    <button class="btn btn-primary" @onclick="CreateUser">Create</button>
+                    <button class="btn btn-secondary" @onclick="() => _showCreateForm = false">Cancel</button>
+                </div>
+            </div>
+        }
+        else if (_editUser is not null)
+        {
+            <div class="card border-secondary">
+                <div class="card-body">
+                    <h5>Edit: @_editUser.UserName</h5>
+                    <div class="mb-2">
+                        <label class="form-label">Display Name</label>
+                        <InputText @bind-Value="_editDisplayName" class="form-control border-secondary" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Role</label>
+                        <InputSelect @bind-Value="_editRole" class="form-select border-secondary">
+                            <option value="User">User</option>
+                            <option value="Admin">Admin</option>
+                        </InputSelect>
+                    </div>
+                    <button class="btn btn-primary" @onclick="SaveEdit">Save</button>
+                    <button class="btn btn-secondary" @onclick="() => _editUser = null">Cancel</button>
+                </div>
+            </div>
+        }
+        else if (_resetUser is not null)
+        {
+            <div class="card border-secondary">
+                <div class="card-body">
+                    <h5>Reset Password: @_resetUser.UserName</h5>
+                    <div class="mb-2">
+                        <label class="form-label">New Temporary Password</label>
+                        <InputText @bind-Value="_resetPassword" type="password" class="form-control border-secondary" />
+                    </div>
+                    <button class="btn btn-warning" @onclick="ResetPassword">Reset</button>
+                    <button class="btn btn-secondary" @onclick="() => _resetUser = null">Cancel</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <button class="btn btn-primary" @onclick="() => _showCreateForm = true">Create User</button>
+        }
+    </div>
+</div>
+
+<ConfirmDialog @ref="_confirmDialog" Title="Delete User" Message="@_deleteMessage" ConfirmText="Delete"
+               OnConfirm="ConfirmDelete" OnCancel="() => _deleteTarget = null" />
+
+@code {
+    private List<UserRow> _users = new();
+    private string? _message;
+    private string? _error;
+
+    private bool _showCreateForm;
+    private CreateModel _createModel = new();
+
+    private UserRow? _editUser;
+    private string _editDisplayName = "";
+    private string _editRole = "User";
+
+    private UserRow? _resetUser;
+    private string _resetPassword = "";
+
+    private UserRow? _deleteTarget;
+    private string _deleteMessage = "";
+    private ConfirmDialog _confirmDialog = null!;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = null!;
+
+    private sealed class UserRow
+    {
+        public string Id { get; set; } = "";
+        public string UserName { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string Role { get; set; } = "";
+        public bool TotpEnabled { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
+
+    private sealed class CreateModel
+    {
+        public string Username { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Role { get; set; } = "User";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _users = await (from u in db.Users.OfType<AppUser>()
+                        join ur in db.UserRoles on u.Id equals ur.UserId into userRoles
+                        from ur in userRoles.DefaultIfEmpty()
+                        join r in db.Roles on ur.RoleId equals r.Id into roles
+                        from r in roles.DefaultIfEmpty()
+                        select new UserRow
+                        {
+                            Id = u.Id,
+                            UserName = u.UserName!,
+                            DisplayName = u.DisplayName,
+                            Role = r != null ? r.Name! : "User",
+                            TotpEnabled = u.TwoFactorEnabled,
+                            CreatedAt = u.CreatedAt
+                        }).ToListAsync();
+    }
+
+    private async Task CreateUser()
+    {
+        _error = null;
+        _message = null;
+
+        var user = new AppUser
+        {
+            UserName = _createModel.Username,
+            DisplayName = _createModel.DisplayName,
+            MustChangePassword = true,
+            MustSetupTotp = true,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        var result = await UserManager.CreateAsync(user, _createModel.Password);
+        if (!result.Succeeded)
+        {
+            _error = string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        await UserManager.AddToRoleAsync(user, _createModel.Role);
+        _message = $"User '{_createModel.Username}' created.";
+        _createModel = new CreateModel();
+        _showCreateForm = false;
+        await LoadUsers();
+    }
+
+    private void StartEdit(UserRow u)
+    {
+        _editUser = u;
+        _editDisplayName = u.DisplayName;
+        _editRole = u.Role;
+        _resetUser = null;
+        _showCreateForm = false;
+    }
+
+    private async Task SaveEdit()
+    {
+        _error = null;
+        _message = null;
+
+        if (_editUser is null) return;
+        var user = await UserManager.FindByIdAsync(_editUser.Id);
+        if (user is null) return;
+
+        if (_editUser.Role == "Admin" && _editRole != "Admin")
+        {
+            var admins = await UserManager.GetUsersInRoleAsync("Admin");
+            if (admins.Count <= 1)
+            {
+                _error = "Cannot demote the last admin.";
+                return;
+            }
+        }
+
+        user.DisplayName = _editDisplayName;
+        await UserManager.UpdateAsync(user);
+
+        if (_editUser.Role != _editRole)
+        {
+            await UserManager.RemoveFromRoleAsync(user, _editUser.Role);
+            await UserManager.AddToRoleAsync(user, _editRole);
+        }
+
+        _message = $"User '{user.UserName}' updated.";
+        _editUser = null;
+        await LoadUsers();
+    }
+
+    private void StartResetPassword(UserRow u)
+    {
+        _resetUser = u;
+        _resetPassword = "";
+        _editUser = null;
+        _showCreateForm = false;
+    }
+
+    private async Task ResetPassword()
+    {
+        _error = null;
+        _message = null;
+
+        if (_resetUser is null) return;
+        var user = await UserManager.FindByIdAsync(_resetUser.Id);
+        if (user is null) return;
+
+        var token = await UserManager.GeneratePasswordResetTokenAsync(user);
+        var result = await UserManager.ResetPasswordAsync(user, token, _resetPassword);
+        if (!result.Succeeded)
+        {
+            _error = string.Join(" ", result.Errors.Select(e => e.Description));
+            return;
+        }
+
+        user.MustChangePassword = true;
+        await UserManager.UpdateAsync(user);
+        PostLoginRedirectMiddleware.EvictUserCache(MemoryCache, user.Id);
+
+        _message = $"Password reset for '{user.UserName}'.";
+        _resetUser = null;
+    }
+
+    private async Task StartDelete(UserRow u)
+    {
+        var state = await AuthState;
+        var currentUser = await UserManager.GetUserAsync(state.User);
+
+        if (currentUser?.Id == u.Id)
+        {
+            _error = "Cannot delete your own account.";
+            StateHasChanged();
+            return;
+        }
+
+        if (u.Role == "Admin")
+        {
+            var admins = await UserManager.GetUsersInRoleAsync("Admin");
+            if (admins.Count <= 1)
+            {
+                _error = "Cannot delete the last admin.";
+                StateHasChanged();
+                return;
+            }
+        }
+
+        _deleteTarget = u;
+        _deleteMessage = $"Are you sure you want to delete user '{u.UserName}'? This cannot be undone.";
+        _confirmDialog.Show();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        _error = null;
+        _message = null;
+
+        if (_deleteTarget is null) return;
+        var user = await UserManager.FindByIdAsync(_deleteTarget.Id);
+        if (user is null) return;
+
+        await UserManager.DeleteAsync(user);
+        _message = $"User '{user.UserName}' deleted.";
+        _deleteTarget = null;
+        await LoadUsers();
+    }
+}

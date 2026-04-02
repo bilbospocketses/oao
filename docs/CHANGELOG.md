@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes and post-plan decisions for Fish Audio Orchestrator.
+All notable changes and post-plan decisions for Open Audio Orchestrator (formerly Fish Audio Orchestrator).
 
 Design specs and implementation plans in `superpowers/specs/` and `superpowers/plans/` reflect decisions made at the time they were written. This changelog captures adjustments made after those documents were finalized.
 
@@ -48,7 +48,7 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 - **TtsPlayground CancelJob** — now checks fresh status and delegates to `TtsJobProcessor.CancelJobAsync` for processing jobs
 - **HttpClient timeout** — set to 5 hours (was infinite)
 - **ContainerConfigService** — Docker container name regex validation on `profile.Name`
-- **FishProxyConfigProvider** — lock added to prevent CTS double-dispose race
+- **ProxyConfigProvider** — lock added to prevent CTS double-dispose race
 - **TtsClientService.GenerateAsync** — dead code removed (only `GetHealthAsync` retained)
 
 ### Setup Wizard Improvements
@@ -189,10 +189,10 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 - **After:** Uses `IHttpClientFactory` for proper connection pooling
 - **Affected files:** `VoiceLibraryService.cs`, `Program.cs`
 
-### Fix: CancellationTokenSource Leaks in FishProxyConfigProvider
+### Fix: CancellationTokenSource Leaks in ProxyConfigProvider
 - **Before:** Old CTS cancelled but never disposed on model swaps
 - **After:** `oldCts.Dispose()` called after cancel
-- **Affected files:** `FishProxyConfigProvider.cs`
+- **Affected files:** `ProxyConfigProvider.cs`
 
 ### Fix: Tags Not Saved When Adding Voice
 - **Before:** Tags field collected in UI but never passed to `AddVoiceAsync` (method didn't accept the parameter)

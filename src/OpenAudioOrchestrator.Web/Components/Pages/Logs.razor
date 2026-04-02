@@ -1,0 +1,108 @@
+@page "/logs"
+@attribute [Authorize]
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject IContainerLogService LogService
+@using Microsoft.EntityFrameworkCore
+@using OpenAudioOrchestrator.Web.Data
+@using OpenAudioOrchestrator.Web.Hubs
+@implements IAsyncDisposable
+
+<PageTitle>Container Logs — Open Audio Orchestrator</PageTitle>
+
+<h2>Container Logs</h2>
+
+<div class="mb-3">
+    <label class="form-label">Container</label>
+    <select class="form-select border-secondary" style="max-width: 400px;"
+            @onchange="OnContainerChanged">
+        <option value="">-- Select a container --</option>
+        @foreach (var model in _models)
+        {
+            <option value="@model.ContainerId" selected="@(model.ContainerId == _selectedContainerId)">
+                @model.Name (@model.Status) @(model.ContainerId?[..12] ?? "no container")
+            </option>
+        }
+    </select>
+</div>
+
+@if (!string.IsNullOrEmpty(_selectedContainerId))
+{
+    <small class="text-muted d-block mb-1">Newest entries first</small>
+    <div class="bg-dark border border-secondary rounded p-2"
+         style="height: 70vh; overflow-y: auto; font-family: monospace; font-size: 0.85em;">
+        @for (var i = _logLines.Count - 1; i >= 0; i--)
+        {
+            <div class="text-light">@_logLines[i]</div>
+        }
+        @if (_logLines.Count == 0)
+        {
+            <div class="text-muted">Waiting for log output...</div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Select a container to view its logs.</div>
+}
+
+@code {
+    private List<ModelProfile> _models = new();
+    private string? _selectedContainerId;
+    private List<string> _logLines = new();
+    private readonly string _subscriberId = Guid.NewGuid().ToString();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db = await DbFactory.CreateDbContextAsync();
+        _models = await db.ModelProfiles
+            .Where(m => m.ContainerId != null)
+            .OrderByDescending(m => m.Status == ModelStatus.Running)
+            .ThenBy(m => m.Name)
+            .ToListAsync();
+
+        var running = _models.FirstOrDefault(m => m.Status == ModelStatus.Running);
+        if (running?.ContainerId is not null)
+        {
+            _selectedContainerId = running.ContainerId;
+            LogService.SubscribeCallback(_selectedContainerId, _subscriberId, OnLogLineRaw);
+        }
+    }
+
+    private void OnContainerChanged(ChangeEventArgs e)
+    {
+        var newId = e.Value?.ToString();
+
+        if (_selectedContainerId is not null)
+        {
+            LogService.UnsubscribeCallback(_selectedContainerId, _subscriberId);
+        }
+
+        _logLines.Clear();
+        _selectedContainerId = string.IsNullOrEmpty(newId) ? null : newId;
+
+        if (_selectedContainerId is not null)
+        {
+            LogService.SubscribeCallback(_selectedContainerId, _subscriberId, OnLogLineRaw);
+        }
+    }
+
+    private void OnLogLineRaw(LogLineEvent logLine)
+    {
+        _ = InvokeAsync(() =>
+        {
+            _logLines.Add($"[{logLine.Timestamp:HH:mm:ss}] {logLine.Line}");
+            if (_logLines.Count > 5000) _logLines.RemoveRange(0, _logLines.Count - 5000);
+            StateHasChanged();
+        });
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        if (_selectedContainerId is not null)
+        {
+            LogService.UnsubscribeCallback(_selectedContainerId, _subscriberId);
+        }
+
+        return ValueTask.CompletedTask;
+    }
+}

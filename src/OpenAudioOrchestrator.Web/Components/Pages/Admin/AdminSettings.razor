@@ -1,0 +1,113 @@
+@page "/admin/settings"
+@attribute [Authorize(Roles = "Admin")]
+@inject IConfiguration Config
+@inject IWebHostEnvironment Env
+
+<PageTitle>Settings — Open Audio Orchestrator</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h3>Admin Settings</h3>
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert alert-success">@_message</div>
+        }
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <div class="card border-secondary mb-3">
+            <div class="card-body">
+                <h5>HTTPS / Domain</h5>
+                <p class="text-muted">Configure a fully qualified domain name for automatic Let's Encrypt HTTPS. Changes require an application restart.</p>
+                <div class="mb-3">
+                    <label class="form-label">FQDN</label>
+                    <InputText @bind-Value="_fqdn" class="form-control border-secondary"
+                               placeholder="e.g. oao.example.com" />
+                </div>
+                <button class="btn btn-primary" @onclick="SaveFqdn" disabled="@_loading">
+                    @(_loading ? "Saving..." : "Save")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _fqdn = "";
+    private string? _message;
+    private string? _error;
+    private bool _loading;
+
+    protected override void OnInitialized()
+    {
+        _fqdn = Config["OpenAudioOrchestrator:Domain"] ?? "";
+    }
+
+    private async Task SaveFqdn()
+    {
+        _message = null;
+        _error = null;
+        _loading = true;
+
+        var settingsPath = Path.Combine(Env.ContentRootPath, "appsettings.json");
+        if (!File.Exists(settingsPath))
+        {
+            _error = "Settings file not found.";
+            _loading = false;
+            return;
+        }
+
+        var json = await File.ReadAllTextAsync(settingsPath);
+        var doc = System.Text.Json.JsonDocument.Parse(json);
+        using var stream = new MemoryStream();
+        using var writer = new System.Text.Json.Utf8JsonWriter(stream, new System.Text.Json.JsonWriterOptions { Indented = true });
+        writer.WriteStartObject();
+
+        foreach (var prop in doc.RootElement.EnumerateObject())
+        {
+            if (prop.Name == "OpenAudioOrchestrator")
+            {
+                writer.WriteStartObject("OpenAudioOrchestrator");
+                foreach (var sub in prop.Value.EnumerateObject())
+                {
+                    if (sub.Name == "Domain")
+                        writer.WriteString("Domain", _fqdn.Trim());
+                    else
+                        sub.WriteTo(writer);
+                }
+                writer.WriteEndObject();
+            }
+            else if (prop.Name == "LettuceEncrypt")
+            {
+                writer.WriteStartObject("LettuceEncrypt");
+                foreach (var sub in prop.Value.EnumerateObject())
+                {
+                    if (sub.Name == "DomainNames")
+                    {
+                        writer.WriteStartArray("DomainNames");
+                        if (!string.IsNullOrWhiteSpace(_fqdn))
+                            writer.WriteStringValue(_fqdn.Trim());
+                        writer.WriteEndArray();
+                    }
+                    else
+                        sub.WriteTo(writer);
+                }
+                writer.WriteEndObject();
+            }
+            else
+            {
+                prop.WriteTo(writer);
+            }
+        }
+
+        writer.WriteEndObject();
+        await writer.FlushAsync();
+        await File.WriteAllBytesAsync(settingsPath, stream.ToArray());
+
+        _message = "Domain saved. Restart the application to apply HTTPS changes.";
+        _loading = false;
+    }
+}

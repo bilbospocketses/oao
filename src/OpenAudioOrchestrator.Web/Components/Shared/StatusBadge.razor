@@ -1,0 +1,17 @@
+@using OpenAudioOrchestrator.Web.Data.Entities
+
+<span class="badge @CssClass">@Status</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public ModelStatus Status { get; set; }
+
+    private string CssClass => Status switch
+    {
+        ModelStatus.Running => "bg-success",
+        ModelStatus.Stopped => "bg-secondary",
+        ModelStatus.Error => "bg-danger",
+        ModelStatus.Created => "bg-info",
+        _ => "bg-secondary"
+    };
+}
