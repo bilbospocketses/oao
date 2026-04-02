@@ -60,7 +60,7 @@ Navigate to `http://localhost:5206` and complete the 7-step setup wizard. After 
 
 - The **s2-pro** model requires the `server-cuda-v2.0.0-beta` Docker image (the latest `server-cuda` tag has a [torchaudio compatibility issue](https://github.com/fishaudio/fish-speech/issues/1118))
 - The model uses ~22 GB VRAM — on a card with less than 24 GB it spills to system RAM, resulting in slower generation (~9s/token). A 24 GB+ GPU is recommended for production use
-- FP16 (`--half`) is enabled by default and recommended for cards with 12 GB VRAM or less
+- FP16 (`--half`) is enabled by default and recommended for cards with 20 GB VRAM or less
 - For voice cloning reference audio guidelines, see the [Fish Audio Voice Cloning Guide](https://fish.audio/blog/voice-cloning-guide/)
 
 ## Configuration
