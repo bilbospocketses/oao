@@ -59,12 +59,12 @@ public partial class SetupDownloadService
         {
             var (exitCode, _) = await RunCommandAsync("git", "--version");
             if (exitCode != 0)
-                return (false, "Git is not installed. Install it from PowerShell:\nwinget install Git.Git\nThen click Retry.");
+                return (false, PlatformDefaults.GitInstallHint);
             return (true, null);
         }
         catch
         {
-            return (false, "Git is not installed or not in PATH. Install it from PowerShell:\nwinget install Git.Git\nThen click Retry.");
+            return (false, PlatformDefaults.GitInstallHint);
         }
     }
 
@@ -74,12 +74,12 @@ public partial class SetupDownloadService
         {
             var (exitCode, _) = await RunCommandAsync("git", "lfs", "version");
             if (exitCode != 0)
-                return (false, "Git LFS is not installed. Run the following in PowerShell:\ngit lfs install\nThen click Retry.");
+                return (false, PlatformDefaults.GitLfsInstallHint);
             return (true, null);
         }
         catch
         {
-            return (false, "Git LFS is not installed. Run the following in PowerShell:\ngit lfs install\nThen click Retry.");
+            return (false, PlatformDefaults.GitLfsInstallHint);
         }
     }
 

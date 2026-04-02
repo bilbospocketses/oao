@@ -4,7 +4,8 @@ public static class AudioEndpoints
 {
     public static void MapAudioEndpoints(this WebApplication app)
     {
-        var dataRoot = app.Configuration["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+        var dataRoot = PlatformDefaults.ConfigValueOrDefault(
+            app.Configuration["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
         var outputRoot = Path.GetFullPath(Path.Combine(dataRoot, "Output"));
         var referencesRoot = Path.GetFullPath(Path.Combine(dataRoot, "References"));
 

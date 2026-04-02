@@ -31,7 +31,8 @@ public class TtsJobProcessor : BackgroundService
         _docker = docker;
         _eventBus = eventBus;
         _logger = logger;
-        var dataRoot = config["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+        var dataRoot = PlatformDefaults.ConfigValueOrDefault(
+            config["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
         _outputPath = Path.Combine(dataRoot, "Output");
         _jobSignal = jobSignal;
     }
