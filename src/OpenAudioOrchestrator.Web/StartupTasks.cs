@@ -11,7 +11,7 @@ namespace OpenAudioOrchestrator.Web;
 public static class StartupTasks
 {
     // Default DB path used during initial setup before the user picks a location
-    private const string DefaultDbPath = @"C:\MyOpenAudioProj\AudioOrchestrator.db";
+    private static string DefaultDbPath => PlatformDefaults.DbPath;
 
     public static async Task RunAsync(WebApplication app)
     {
