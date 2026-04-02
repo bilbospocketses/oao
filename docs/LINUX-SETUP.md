@@ -1,6 +1,6 @@
 # Linux Setup Guide
 
-This guide covers installing and running Open Audio Orchestrator on Linux. For Windows, see the main [README](../README.md).
+This guide covers installing and running Open Audio Orchestrator on Linux. For Windows, see [`WINDOWS-SETUP.md`](WINDOWS-SETUP.md).
 
 ## Prerequisites
 

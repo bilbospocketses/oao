@@ -12,7 +12,7 @@ A local Blazor Server dashboard for managing Fish Speech Docker containers with 
 
 ## Overview
 
-Open Audio Orchestrator runs locally on Windows (Linux testing and instructions coming soon...) and manages [Fish Speech](https://github.com/fishaudio/fish-speech) Docker containers via Docker Desktop (Windows) and Docker (Linux). It provides a web interface for deploying TTS models, managing a voice reference library, generating speech via a background job queue, and monitoring container health and GPU metrics in real time.
+Open Audio Orchestrator runs locally on Windows or Linux and manages [Fish Speech](https://github.com/fishaudio/fish-speech) Docker containers via Docker Desktop (Windows) or Docker CE (Linux). It provides a web interface for deploying TTS models, managing a voice reference library, generating speech via a background job queue, and monitoring container health and GPU metrics in real time.
 
 ## Features
 
@@ -37,53 +37,24 @@ Open Audio Orchestrator runs locally on Windows (Linux testing and instructions 
 
 ## Prerequisites
 
-**Windows:**
-- Windows 10/11 with [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- NVIDIA GPU with CUDA drivers (tested on RTX 3060 12 GB)
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- [Git](https://git-scm.com/) with [Git LFS](https://git-lfs.com/) (for model download during setup)
-
-**Linux:**
-- Docker CE with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 - NVIDIA GPU with CUDA drivers
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- Docker (Desktop on Windows, CE on Linux)
+- .NET 9 SDK
 - Git with Git LFS
-- See [`docs/LINUX-SETUP.md`](docs/LINUX-SETUP.md) for detailed setup instructions
+
+Platform-specific setup instructions:
+- **Windows:** [`docs/WINDOWS-SETUP.md`](docs/WINDOWS-SETUP.md)
+- **Linux:** [`docs/LINUX-SETUP.md`](docs/LINUX-SETUP.md) (Debian/Ubuntu, RHEL/Fedora, Alpine)
 
 ## Quick Start
 
-1. **Clone and run**
+```bash
+git clone https://github.com/bilbospocketses/OpenAudioOrchestrator.git
+cd OpenAudioOrchestrator
+dotnet run --project src/OpenAudioOrchestrator.Web
+```
 
-   ```bash
-   git clone https://github.com/bilbospocketses/OpenAudioOrchestrator.git
-   cd OpenAudioOrchestrator
-   dotnet run --project src/OpenAudioOrchestrator.Web
-   ```
-
-2. **Complete the setup wizard**
-
-   Navigate to `http://localhost:5206`. The 7-step setup wizard will guide you through:
-   1. **Data Storage** — choose directories for checkpoints, references, and output files
-   2. **Model Download** — download the Fish Audio s2-pro model (~11 GB) from HuggingFace, or skip to download later
-   3. **Docker Image** — download the Fish Speech Docker image (~12 GB)
-   4. **Server Configuration** — database encryption key, container port range, optional domain + HTTPS via Let's Encrypt
-   5. **Admin Account** — create your administrator username and password
-   6. **TOTP Setup** — scan QR code with your authenticator app
-   7. **Complete** — review settings and restart instructions
-
-   Downloads in steps 2 and 3 can run in the background while you continue through the wizard. The final page will wait for any active downloads to complete before showing restart instructions.
-
-3. **Restart and log in**
-
-   Stop the app (Ctrl+C) and restart it. Navigate to the URL shown in the setup summary. Log in with your admin credentials.
-
-4. **Deploy a model**
-
-   Go to the Deploy page and click Deploy. The model takes 4-5 minutes to initialize on first start. If the model was not downloaded during setup, the Deploy page will offer to download it.
-
-5. **Generate speech**
-
-   Navigate to the TTS Playground, enter text, and click "Submit to Queue". Jobs process in the background — you can navigate freely. Completed audio appears on the History page.
+Navigate to `http://localhost:5206` and complete the 7-step setup wizard. After setup, restart the app and log in with your admin credentials. See the platform setup guides above for detailed instructions.
 
 ## Model Notes
 
@@ -94,25 +65,25 @@ Open Audio Orchestrator runs locally on Windows (Linux testing and instructions 
 
 ## Configuration
 
-Most settings are configured automatically by the setup wizard. For advanced use or manual changes, edit `src/OpenAudioOrchestrator.Web/appsettings.json`:
+Most settings are configured automatically by the setup wizard. The app auto-detects your platform and applies appropriate defaults. For advanced use or manual changes, edit `src/OpenAudioOrchestrator.Web/appsettings.json`:
 
-| Key | Description | Default |
-|-----|-------------|---------|
-| `ConnectionStrings:Default` | SQLite database path | `C:\MyOpenAudioProj\AudioOrchestrator.db` |
-| `OpenAudioOrchestrator:DockerEndpoint` | Docker API endpoint | `npipe://./pipe/docker_engine` |
-| `OpenAudioOrchestrator:DataRoot` | Root directory for data files | `C:\MyOpenAudioProj` |
-| `OpenAudioOrchestrator:PortRange:Start` | Start of container port range | `9001` |
-| `OpenAudioOrchestrator:PortRange:End` | End of container port range | `9099` |
-| `OpenAudioOrchestrator:DefaultImageTag` | Default Fish Speech Docker image | `fishaudio/fish-speech:server-cuda-v2.0.0-beta` |
-| `OpenAudioOrchestrator:DockerNetworkName` | Docker bridge network name | `oao-network` |
-| `OpenAudioOrchestrator:HealthCheckIntervalSeconds` | Health check frequency (seconds) | `30` |
-| `OpenAudioOrchestrator:Domain` | FQDN for Let's Encrypt (blank = localhost) | `""` |
-| `OpenAudioOrchestrator:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) | `""` |
-| `OpenAudioOrchestrator:AdminUser` | Seed admin username (env var override) | `""` |
-| `OpenAudioOrchestrator:AdminPassword` | Seed admin password (env var override) | `""` |
-| `LettuceEncrypt:AcceptTermsOfService` | Accept Let's Encrypt terms | `true` |
-| `LettuceEncrypt:DomainNames` | Domain names for certificate | `[]` |
-| `LettuceEncrypt:EmailAddress` | Email for certificate renewal notices | `""` |
+| Key | Description |
+|-----|-------------|
+| `ConnectionStrings:Default` | SQLite database path |
+| `OpenAudioOrchestrator:DockerEndpoint` | Docker API endpoint |
+| `OpenAudioOrchestrator:DataRoot` | Root directory for data files |
+| `OpenAudioOrchestrator:PortRange:Start` | Start of container port range (default: `9001`) |
+| `OpenAudioOrchestrator:PortRange:End` | End of container port range (default: `9099`) |
+| `OpenAudioOrchestrator:DefaultImageTag` | Default Fish Speech Docker image |
+| `OpenAudioOrchestrator:DockerNetworkName` | Docker bridge network name (default: `oao-network`) |
+| `OpenAudioOrchestrator:HealthCheckIntervalSeconds` | Health check frequency in seconds (default: `30`) |
+| `OpenAudioOrchestrator:Domain` | FQDN for Let's Encrypt (blank = localhost) |
+| `OpenAudioOrchestrator:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) |
+| `OpenAudioOrchestrator:AdminUser` | Seed admin username (env var override) |
+| `OpenAudioOrchestrator:AdminPassword` | Seed admin password (env var override) |
+| `LettuceEncrypt:AcceptTermsOfService` | Accept Let's Encrypt terms (default: `true`) |
+| `LettuceEncrypt:DomainNames` | Domain names for certificate |
+| `LettuceEncrypt:EmailAddress` | Email for certificate renewal notices |
 
 For automated deployments, set `OpenAudioOrchestrator__AdminUser` and `OpenAudioOrchestrator__AdminPassword` as environment variables to seed the admin account on first run (TOTP setup required on first login).
 
