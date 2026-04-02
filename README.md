@@ -37,10 +37,18 @@ Open Audio Orchestrator runs locally on Windows (Linux testing and instructions 
 
 ## Prerequisites
 
+**Windows:**
 - Windows 10/11 with [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - NVIDIA GPU with CUDA drivers (tested on RTX 3060 12 GB)
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [Git](https://git-scm.com/) with [Git LFS](https://git-lfs.com/) (for model download during setup)
+
+**Linux:**
+- Docker CE with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+- NVIDIA GPU with CUDA drivers
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- Git with Git LFS
+- See [`docs/LINUX-SETUP.md`](docs/LINUX-SETUP.md) for detailed setup instructions
 
 ## Quick Start
 
@@ -140,7 +148,7 @@ dotnet ef migrations add <MigrationName>
 
 - [ ] Create a containerized Docker version of the Blazor app (publish prebuilt image to Docker Hub)
   - [ ] Remove YARP reverse proxy from containerized app; provide general guidance on using a separate reverse proxy running externally in another Docker container
-- [ ] Create Linux native version (platform-aware paths, Linux setup instructions), and validate deployment on several Linux variants (Debian/Ubuntu, RH/Fedora, etc)
+- [x] ~~Create Linux native version (platform-aware paths, Linux setup instructions), and validate deployment on several Linux variants (Debian/Ubuntu, RH/Fedora, etc)~~
 - [ ] Performance enhancements
 
 ## Attribution
