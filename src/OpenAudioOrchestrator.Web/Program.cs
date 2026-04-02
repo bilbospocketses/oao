@@ -52,7 +52,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Data Protection (persistent key storage in DataRoot)
-var dataRoot = builder.Configuration["OpenAudioOrchestrator:DataRoot"] ?? @"C:\MyOpenAudioProj";
+var dataRoot = PlatformDefaults.ConfigValueOrDefault(
+    builder.Configuration["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
 // Store DP keys alongside the application, not in DataRoot (which can change during setup)
 var dpKeysPath = Path.Combine(builder.Environment.ContentRootPath, ".dp-keys");
 Directory.CreateDirectory(dpKeysPath);
@@ -64,7 +65,9 @@ if (OperatingSystem.IsWindows())
 
 
 // Build SQLite connection string (with optional SQLCipher encryption)
-var connectionString = builder.Configuration.GetConnectionString("Default")!;
+var connectionString = PlatformDefaults.ConfigValueOrDefault(
+    builder.Configuration.GetConnectionString("Default"),
+    $"Data Source={PlatformDefaults.DbPath}");
 var encryptedDbKey = builder.Configuration["OpenAudioOrchestrator:DatabaseKey"];
 if (!string.IsNullOrWhiteSpace(encryptedDbKey))
 {
@@ -136,8 +139,9 @@ builder.Services.ConfigureApplicationCookie(opts =>
 // Docker client
 builder.Services.AddSingleton<IDockerClient>(_ =>
 {
-    var endpoint = builder.Configuration["OpenAudioOrchestrator:DockerEndpoint"]
-        ?? "npipe://./pipe/docker_engine";
+    var endpoint = PlatformDefaults.ConfigValueOrDefault(
+        builder.Configuration["OpenAudioOrchestrator:DockerEndpoint"],
+        PlatformDefaults.DockerEndpoint);
     return new DockerClientConfiguration(new Uri(endpoint)).CreateClient();
 });
 
