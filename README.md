@@ -17,7 +17,7 @@ Open Audio Orchestrator runs locally on Windows or Linux and manages [Fish Speec
 ## Features
 
 - **Docker container orchestration** — create, start, stop, swap, and remove Fish Speech containers
-- **Voice library** — upload reference audio (10-30s WAV recommended) for voice cloning, tag and organize voices
+- **Voice library** — upload reference audio for voice cloning, tag and organize voices (see [Fish Audio's guide](https://fish.audio/blog/voice-cloning-guide/) for best practices)
 - **Background TTS job queue** — submit speech generation requests that process serially in the background; navigate freely while jobs run, with real-time status updates
 - **App restart resilience** — TTS generation runs inside the container via `docker exec curl`, surviving app restarts; on recovery, completed files are detected automatically
 - **Real-time dashboard** — live container status, GPU memory/core utilization (5-second refresh), and latest model output
@@ -59,9 +59,9 @@ Navigate to `http://localhost:5206` and complete the 7-step setup wizard. After 
 ## Model Notes
 
 - The **s2-pro** model requires the `server-cuda-v2.0.0-beta` Docker image (the latest `server-cuda` tag has a [torchaudio compatibility issue](https://github.com/fishaudio/fish-speech/issues/1118))
-- The model uses ~22 GB VRAM — on a 12 GB card it spills to system RAM, resulting in slower generation (~9s/token). A 24 GB+ GPU is recommended for production use
+- The model uses ~22 GB VRAM — on a card with less than 24 GB it spills to system RAM, resulting in slower generation (~9s/token). A 24 GB+ GPU is recommended for production use
 - FP16 (`--half`) is enabled by default and recommended for cards with 12 GB VRAM or less
-- Voice cloning reference audio should be 10-30 seconds of clean WAV audio with an accompanying transcript
+- For voice cloning reference audio guidelines, see the [Fish Audio Voice Cloning Guide](https://fish.audio/blog/voice-cloning-guide/)
 
 ## Configuration
 
