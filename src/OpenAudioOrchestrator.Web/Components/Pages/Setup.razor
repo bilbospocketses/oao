@@ -803,7 +803,9 @@
 
     private string? GetCurrentDatabasePath()
     {
-        var connStr = Config.GetConnectionString("Default");
+        var connStr = PlatformDefaults.ConfigValueOrDefault(
+            Config.GetConnectionString("Default"),
+            $"Data Source={PlatformDefaults.DbPath}");
         if (connStr is null) return null;
         var prefix = "Data Source=";
         var idx = connStr.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
