@@ -12,3 +12,4 @@ publish/
 *.DotSettings.user
 node_modules/
 dist/
+.dp-keys/
