@@ -244,7 +244,7 @@ public partial class Program
         X509Certificate2 cert;
         if (File.Exists(certPath))
         {
-            cert = new X509Certificate2(certPath);
+            cert = X509CertificateLoader.LoadPkcs12FromFile(certPath, null);
         }
         else
         {
