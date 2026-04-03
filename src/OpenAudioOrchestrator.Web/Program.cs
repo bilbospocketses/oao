@@ -240,31 +240,23 @@ public partial class Program
 {
     internal static void ConfigurePlatformKeyProtection(IDataProtectionBuilder dpBuilder, string dpKeysPath)
     {
-        if (OperatingSystem.IsWindows())
+        var certPath = Path.Combine(dpKeysPath, "dp-key-protection.pfx");
+        X509Certificate2 cert;
+        if (File.Exists(certPath))
         {
-            dpBuilder.ProtectKeysWithDpapi();
+            cert = new X509Certificate2(certPath);
         }
         else
         {
-            // On Linux, use a self-signed certificate instead of DPAPI for key encryption.
-            var certPath = Path.Combine(dpKeysPath, "dp-key-protection.pfx");
-            X509Certificate2 cert;
-            if (File.Exists(certPath))
-            {
-                cert = new X509Certificate2(certPath);
-            }
-            else
-            {
-                using var rsa = RSA.Create(2048);
-                var req = new CertificateRequest(
-                    "CN=OpenAudioOrchestrator-DataProtection",
-                    rsa,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-                cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(10));
-                File.WriteAllBytes(certPath, cert.Export(X509ContentType.Pfx));
-            }
-            dpBuilder.ProtectKeysWithCertificate(cert);
+            using var rsa = RSA.Create(2048);
+            var req = new CertificateRequest(
+                "CN=OpenAudioOrchestrator-DataProtection",
+                rsa,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+            cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(10));
+            File.WriteAllBytes(certPath, cert.Export(X509ContentType.Pfx));
         }
+        dpBuilder.ProtectKeysWithCertificate(cert);
     }
 }
