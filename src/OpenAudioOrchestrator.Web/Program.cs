@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.RateLimiting;
 using Yarp.ReverseProxy.Configuration;
 
@@ -60,8 +62,7 @@ Directory.CreateDirectory(dpKeysPath);
 var dpBuilder = builder.Services.AddDataProtection()
     .SetApplicationName("OpenAudioOrchestrator")
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
-if (OperatingSystem.IsWindows())
-    dpBuilder.ProtectKeysWithDpapi();
+ConfigurePlatformKeyProtection(dpBuilder, dpKeysPath);
 
 
 // Build SQLite connection string (with optional SQLCipher encryption)
@@ -77,8 +78,7 @@ if (!string.IsNullOrWhiteSpace(encryptedDbKey))
     var tempDpBuilder = tempServices.AddDataProtection()
         .SetApplicationName("OpenAudioOrchestrator")
         .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
-    if (OperatingSystem.IsWindows())
-        tempDpBuilder.ProtectKeysWithDpapi();
+    ConfigurePlatformKeyProtection(tempDpBuilder, dpKeysPath);
 #pragma warning disable ASP0000 // Intentional: need DataProtection before full DI is built
     using var tempProvider = tempServices.BuildServiceProvider();
 #pragma warning restore ASP0000
@@ -236,4 +236,35 @@ app.MapAuthEndpoints();
 app.Run();
 
 // Make Program accessible for WebApplicationFactory integration tests
-public partial class Program { }
+public partial class Program
+{
+    internal static void ConfigurePlatformKeyProtection(IDataProtectionBuilder dpBuilder, string dpKeysPath)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            dpBuilder.ProtectKeysWithDpapi();
+        }
+        else
+        {
+            // On Linux, use a self-signed certificate instead of DPAPI for key encryption.
+            var certPath = Path.Combine(dpKeysPath, "dp-key-protection.pfx");
+            X509Certificate2 cert;
+            if (File.Exists(certPath))
+            {
+                cert = new X509Certificate2(certPath);
+            }
+            else
+            {
+                using var rsa = RSA.Create(2048);
+                var req = new CertificateRequest(
+                    "CN=OpenAudioOrchestrator-DataProtection",
+                    rsa,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+                cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(10));
+                File.WriteAllBytes(certPath, cert.Export(X509ContentType.Pfx));
+            }
+            dpBuilder.ProtectKeysWithCertificate(cert);
+        }
+    }
+}
