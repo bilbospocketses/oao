@@ -42,7 +42,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
     public string? GetChallengeResponse(string token) =>
         _challengeResponses.TryGetValue(token, out var response) ? response : null;
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -50,7 +50,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
         if (string.IsNullOrWhiteSpace(dataRoot))
         {
             _logger.LogWarning("DataRoot not configured, ACME certificate service will not start");
-            return;
+            return Task.CompletedTask;
         }
 
         // Try to load existing certificate
@@ -66,7 +66,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
                 if (_certificate.NotAfter > DateTime.UtcNow.AddDays(RenewalThresholdDays))
                 {
                     ScheduleRenewalCheck();
-                    return;
+                    return Task.CompletedTask;
                 }
 
                 _logger.LogInformation("Certificate expiring within {Days} days, will renew", RenewalThresholdDays);
@@ -84,6 +84,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
         // Request certificate in background
         _ = RequestCertificateWithRetryAsync(_cts.Token);
         ScheduleRenewalCheck();
+        return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -332,7 +333,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
         var pfxBytes = leafCert.Export(X509ContentType.Pfx);
         await File.WriteAllBytesAsync(certPath, pfxBytes, ct);
 
-        _certificate = new X509Certificate2(pfxBytes);
+        _certificate = X509CertificateLoader.LoadPkcs12(pfxBytes, null);
         _logger.LogInformation("ACME certificate installed for {Domain}, expires {Expiry}",
             domain, _certificate.NotAfter);
 
@@ -456,7 +457,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
         using var rsa = RSA.Create(2048);
         var req = new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
-        return new X509Certificate2(cert.Export(X509ContentType.Pfx));
+        return X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), null);
     }
 
     private static string GetCertPath(string dataRoot) => Path.Combine(dataRoot, "acme-cert.pfx");
