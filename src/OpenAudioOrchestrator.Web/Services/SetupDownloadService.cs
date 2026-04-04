@@ -16,8 +16,8 @@ public partial class SetupDownloadService
     private readonly List<string> _dockerPullOutput = new();
     private readonly object _lock = new();
 
-    public bool IsModelDownloading => IsProcessRunning(_modelDownloadProcess);
-    public bool IsDockerPulling => IsProcessRunning(_dockerPullProcess);
+    public bool IsModelDownloading => _modelDownloadProcess is not null;
+    public bool IsDockerPulling => _dockerPullProcess is not null;
     public bool ModelDownloadCompleted { get; private set; }
     public bool DockerPullCompleted { get; private set; }
     public string? ModelDownloadError { get; private set; }
@@ -35,13 +35,6 @@ public partial class SetupDownloadService
     public SetupDownloadService(ILogger<SetupDownloadService> logger)
     {
         _logger = logger;
-    }
-
-    private static bool IsProcessRunning(Process? process)
-    {
-        if (process is null) return false;
-        try { return !process.HasExited; }
-        catch (InvalidOperationException) { return false; }
     }
 
     internal static void ValidateImageTag(string imageTag)
@@ -223,9 +216,10 @@ public partial class SetupDownloadService
 
         process.Exited += (_, _) =>
         {
-            onExit?.Invoke(process.ExitCode);
-            onOutput?.Invoke();
+            var exitCode = process.ExitCode;
             process.Dispose();
+            onExit?.Invoke(exitCode);
+            onOutput?.Invoke();
         };
 
         process.Start();
