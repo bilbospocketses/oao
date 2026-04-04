@@ -6,6 +6,26 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 
 ---
 
+## 2026-04-04 — Replace LettuceEncrypt with Custom ACME Client
+
+### HTTPS / Let's Encrypt
+- **LettuceEncrypt + Certes removed** — both libraries are archived/unmaintained; Certes caused `InvalidOperationException` on Fedora 44 when downloading issued certificates
+- **Custom ACME v2 client** — implements RFC 8555 using only built-in .NET APIs (`HttpClient`, `ECDsa`, `RSA`, `System.Text.Json`); zero third-party ACME dependencies
+- **AcmeCertificateService** — hosted service handling full ACME lifecycle: account creation (ES256), HTTP-01 challenge, order finalization, certificate download, PFX persistence, and automatic renewal (12-hour check, 30-day threshold)
+- **AcmeChallengeMiddleware** — serves HTTP-01 challenge responses at `/.well-known/acme-challenge/`
+- **Self-signed fallback** — Kestrel starts HTTPS immediately with a temporary self-signed cert while the real certificate is requested in the background
+- **Retry on failure** — ACME errors are logged and retried after 1 hour; existing valid certificates are retained
+- **Config section renamed** — `LettuceEncrypt` → `Acme` in appsettings.json (same keys: `AcceptTermsOfService`, `DomainNames`, `EmailAddress`)
+- **Affected files:** `AcmeCertificateService.cs` (new), `AcmeChallengeMiddleware.cs` (new), `Program.cs`, `appsettings.json`, `SetupSettingsService.cs`, `AdminSettings.razor`, `OpenAudioOrchestrator.Web.csproj`, `README.md`, `LINUX-SETUP.md`, `WINDOWS-SETUP.md`
+
+### Setup Wizard Improvements
+- **Model file validation** — setup wizard now validates local s2-pro files against the HuggingFace repository API (checks file names and sizes), catching incomplete downloads and LFS pointer stubs
+- **Git LFS re-download** — if the s2-pro directory exists from a partial download, uses `git lfs pull` instead of `git clone` (which fails on non-empty directories)
+- **Docker image size corrected** — updated from ~12 GB to ~5 GB in wizard UI and documentation
+- **Setup wizard section added to Linux guide** — 7-step wizard overview, post-wizard restart instruction, and tested GPU note now match the Windows guide
+
+---
+
 ## 2026-04-01 — Codebase Audit, Theme System & Wizard Improvements
 
 ### Theme System
