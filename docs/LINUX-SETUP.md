@@ -21,8 +21,15 @@ curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-contai
 sudo apt update
 sudo apt install -y nvidia-container-toolkit
 
-# Docker CE
-sudo apt install -y docker.io
+# Docker CE (add official Docker repo first)
+sudo apt install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
 sudo systemctl enable --now docker
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
@@ -46,7 +53,9 @@ curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-contai
   sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
 sudo dnf install -y nvidia-container-toolkit
 
-# Docker CE
+# Docker CE (add official Docker repo first)
+sudo dnf install -y dnf-plugins-core
+sudo dnf config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
 sudo dnf install -y docker-ce docker-ce-cli containerd.io
 sudo systemctl enable --now docker
 sudo nvidia-ctk runtime configure --runtime=docker
