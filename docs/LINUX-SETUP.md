@@ -4,7 +4,7 @@ This guide covers installing and running Open Audio Orchestrator on Linux. For W
 
 ## Prerequisites
 
-You need: an NVIDIA GPU with CUDA drivers, Docker with NVIDIA Container Toolkit, .NET 9 SDK, and Git with Git LFS.
+You need: an NVIDIA GPU with CUDA drivers, Docker with NVIDIA Container Toolkit, .NET 9 SDK, and Git with Git LFS. Tested on RTX 3060 12 GB.
 
 ### Debian / Ubuntu
 
@@ -110,6 +110,22 @@ dotnet run --project src/OpenAudioOrchestrator.Web
 ```
 
 Navigate to `http://localhost:5206` and complete the setup wizard. The wizard detects your platform and shows Linux-appropriate defaults.
+
+## Setup Wizard
+
+The 7-step setup wizard guides you through:
+
+1. **Data Storage** — choose directories for checkpoints, references, output files, and the database
+2. **Model Download** — download the Fish Audio s2-pro model (~11 GB) from HuggingFace, or skip to download later
+3. **Docker Image** — download the Fish Speech Docker image (~5 GB)
+4. **Server Configuration** — database encryption key, container port range, optional domain + HTTPS via Let's Encrypt
+5. **Admin Account** — create your administrator username and password
+6. **TOTP Setup** — scan QR code with your authenticator app
+7. **Complete** — review settings and restart instructions
+
+Downloads in steps 2 and 3 run in the background while you continue through the wizard. The final page waits for any active downloads to complete before showing restart instructions.
+
+After completing the wizard, stop the app (Ctrl+C) and restart it. Log in with your admin credentials.
 
 ## Running as a systemd Service
 
