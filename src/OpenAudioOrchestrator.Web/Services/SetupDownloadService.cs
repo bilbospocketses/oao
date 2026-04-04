@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace OpenAudioOrchestrator.Web.Services;
@@ -117,6 +118,81 @@ public partial class SetupDownloadService
         var s2ProPath = Path.Combine(checkpointsDir, "s2-pro");
         return Directory.Exists(s2ProPath) && Directory.GetFiles(s2ProPath).Length > 0;
     }
+
+    /// <summary>
+    /// Validates local s2-pro model files against the HuggingFace repository.
+    /// Returns a result indicating whether all files are present and the correct size.
+    /// </summary>
+    public async Task<ModelValidationResult> ValidateModelAsync(string checkpointsDir)
+    {
+        var s2ProPath = Path.Combine(checkpointsDir, "s2-pro");
+
+        if (!Directory.Exists(s2ProPath))
+            return new ModelValidationResult(false, "Model folder not found.");
+
+        List<HuggingFaceFileEntry> remoteFiles;
+        try
+        {
+            using var http = new HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(15);
+            var json = await http.GetStringAsync("https://huggingface.co/api/models/fishaudio/s2-pro/tree/main");
+            remoteFiles = JsonSerializer.Deserialize<List<HuggingFaceFileEntry>>(json) ?? [];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not reach HuggingFace API for model validation");
+            // Fall back to basic check when offline
+            return IsModelPresent(checkpointsDir)
+                ? new ModelValidationResult(true, "Model folder present (offline — could not verify against HuggingFace).")
+                : new ModelValidationResult(false, "Model folder not found.");
+        }
+
+        var missing = new List<string>();
+        var sizeMismatch = new List<string>();
+
+        foreach (var remote in remoteFiles.Where(f => f.Type == "file"))
+        {
+            var localPath = Path.Combine(s2ProPath, remote.Path);
+            if (!File.Exists(localPath))
+            {
+                missing.Add(remote.Path);
+                continue;
+            }
+
+            var localSize = new FileInfo(localPath).Length;
+            if (localSize != remote.Size)
+                sizeMismatch.Add($"{remote.Path} (expected {FormatBytes(remote.Size)}, found {FormatBytes(localSize)})");
+        }
+
+        if (missing.Count == 0 && sizeMismatch.Count == 0)
+            return new ModelValidationResult(true, "All model files verified.");
+
+        var problems = new List<string>();
+        if (missing.Count > 0)
+            problems.Add($"Missing files: {string.Join(", ", missing)}");
+        if (sizeMismatch.Count > 0)
+            problems.Add($"Size mismatch: {string.Join("; ", sizeMismatch)}");
+
+        return new ModelValidationResult(false, string.Join("\n", problems));
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        return bytes switch
+        {
+            >= 1_073_741_824 => $"{bytes / 1_073_741_824.0:F2} GB",
+            >= 1_048_576 => $"{bytes / 1_048_576.0:F1} MB",
+            >= 1_024 => $"{bytes / 1_024.0:F0} KB",
+            _ => $"{bytes} B"
+        };
+    }
+
+    public record ModelValidationResult(bool IsValid, string Message);
+
+    private record HuggingFaceFileEntry(
+        [property: System.Text.Json.Serialization.JsonPropertyName("type")] string Type,
+        [property: System.Text.Json.Serialization.JsonPropertyName("path")] string Path,
+        [property: System.Text.Json.Serialization.JsonPropertyName("size")] long Size);
 
     // --- Background downloads ---
 

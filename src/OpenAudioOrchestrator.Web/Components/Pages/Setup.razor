@@ -77,8 +77,15 @@
 
                 @if (_modelAlreadyPresent)
                 {
-                    <div class="alert alert-success">Model already downloaded.</div>
+                    <div class="alert alert-success" style="white-space: pre-wrap;">@(_modelValidationMessage ?? "Model already downloaded.")</div>
                     <button class="btn btn-primary w-100" @onclick="GoToStep3">Next</button>
+                }
+                else if (!string.IsNullOrEmpty(_modelValidationMessage) && !_modelAlreadyPresent && DownloadSvc.IsModelPresent(_checkpointsDir))
+                {
+                    <div class="alert alert-warning" style="white-space: pre-wrap;">Model files incomplete:\n@_modelValidationMessage</div>
+                    <button class="btn btn-success w-100 mb-2" @onclick="StartModelDownload">Re-download Model (~11 GB)</button>
+                    <button class="btn btn-outline-secondary w-100 mb-2" @onclick="GoToStep3">Continue anyway</button>
+                    <button class="btn btn-outline-secondary w-100" @onclick="SkipModelDownload">Skip</button>
                 }
                 else if (!string.IsNullOrEmpty(_preCheckError))
                 {
@@ -398,6 +405,7 @@
 
     // Step 2
     private bool _modelAlreadyPresent;
+    private string? _modelValidationMessage;
     private bool _modelSkipped;
     private List<string> _downloadOutput = new();
     private Timer? _downloadTimer;
@@ -447,7 +455,7 @@
 
     // --- Step 1: Data Directories ---
 
-    private void ValidateStep1()
+    private async Task ValidateStep1()
     {
         _error = null;
 
@@ -513,7 +521,9 @@
             }
         }
 
-        _modelAlreadyPresent = DownloadSvc.IsModelPresent(_checkpointsDir);
+        var validation = await DownloadSvc.ValidateModelAsync(_checkpointsDir);
+        _modelAlreadyPresent = validation.IsValid;
+        _modelValidationMessage = validation.Message;
         _ = RunModelPreChecks();
 
         _step = 2;
@@ -524,7 +534,9 @@
     private async Task RunModelPreChecks()
     {
         _preCheckError = null;
-        _modelAlreadyPresent = DownloadSvc.IsModelPresent(_checkpointsDir);
+        var validation = await DownloadSvc.ValidateModelAsync(_checkpointsDir);
+        _modelAlreadyPresent = validation.IsValid;
+        _modelValidationMessage = validation.Message;
         if (_modelAlreadyPresent) { StateHasChanged(); return; }
 
         var (gitOk, gitError) = await DownloadSvc.CheckGitAsync();
