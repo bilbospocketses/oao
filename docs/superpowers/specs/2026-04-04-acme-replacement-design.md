@@ -1,12 +1,16 @@
-# Replace LettuceEncrypt with ACMESharpCore
+# Replace LettuceEncrypt with Custom ACME Client
 
 ## Problem
 
-LettuceEncrypt 1.3.3 (archived, no future releases) depends on Certes 3.0.4 (unmaintained since 2021). On Fedora 44, the Certes ACME client consistently fails with `InvalidOperationException: An invalid request URI was provided` when downloading the issued certificate. The same flow works on Ubuntu and Windows. Since both libraries are abandoned, the fix is to replace them with a maintained ACME client.
+LettuceEncrypt 1.3.3 (archived, maintenance-only) depends on Certes 3.0.4 (unmaintained since 2021). On Fedora 44, the Certes ACME client consistently fails with `InvalidOperationException: An invalid request URI was provided` when downloading the issued certificate. The same flow works on Ubuntu and Windows. Since both libraries are abandoned, and other ACME client libraries (ACMESharpCore) also have maintenance concerns, the fix is to implement a custom ACME client using only built-in .NET APIs.
 
 ## Solution
 
-Replace LettuceEncrypt + Certes with ACMESharpCore (actively maintained, used by win-acme/Certify). Implement a custom hosted service that manages the full ACME flow with proper retry/polling logic and certificate persistence.
+Replace LettuceEncrypt + Certes with a custom ACME client built on `HttpClient`, `System.Security.Cryptography`, and `System.Text.Json` — all built into .NET 9. Zero third-party ACME dependencies. The ACME v2 protocol (RFC 8555) is stable and the HTTP-01 challenge flow is straightforward (~200-300 lines).
+
+This approach is future-proof against Let's Encrypt's planned changes:
+- Shorter certificate lifetimes (90 → 47 → 10 days): handled by automatic renewal checks
+- Removal of TLS Client Auth EKU: no impact (server TLS only)
 
 ## Config Change
 
@@ -29,22 +33,50 @@ Same keys, cleaner name, no dependency on a specific library.
 Registered as a singleton + `IHostedService`. Responsibilities:
 
 - **Startup:** Check for existing PFX certificate on disk. If valid and not expiring within 30 days, load it. Otherwise, trigger ACME flow.
-- **ACME flow (using ACMESharpCore):**
-  1. Load or create ACME account (persisted to `{DataRoot}/acme-account.json`)
-  2. Create order for configured domain
-  3. Complete HTTP-01 challenge (stores token/response in a concurrent dictionary read by the challenge middleware)
-  4. Poll order status with retry/backoff until valid
-  5. Download certificate
-  6. Save as PFX to `{DataRoot}/acme-cert.pfx`
-  7. Update the in-memory certificate used by Kestrel's `ServerCertificateSelector`
+- **ACME flow (custom implementation using built-in .NET APIs):**
+  1. Fetch the ACME directory from `https://acme-v02.api.letsencrypt.org/directory`
+  2. Load or create ACME account (ES256 key persisted to `{DataRoot}/acme-account.json`). Account creation uses JWS-signed POST with JWK header. Subsequent requests use JWS with KID header.
+  3. Create order for configured domain
+  4. Complete HTTP-01 challenge (stores token/key-authorization in a concurrent dictionary read by the challenge middleware). Key authorization = `{token}.{JWK thumbprint}`.
+  5. Poll order status with retry/backoff until valid
+  6. Generate RSA key + CSR, finalize order
+  7. Download certificate PEM
+  8. Save as PFX to `{DataRoot}/acme-cert.pfx`
+  9. Update the in-memory certificate used by Kestrel's `ServerCertificateSelector`
 - **Renewal:** Check every 12 hours. Renew if cert expires within 30 days.
 - **Error handling:** On ACME failure, log error, retain any existing cert, retry after 1 hour. On first run with no cert, generate a temporary self-signed cert so Kestrel can start HTTPS while ACME completes in the background.
+
+### ACME Protocol Details (RFC 8555)
+
+All ACME requests are JWS (JSON Web Signature) signed POSTs with a `"nonce"` anti-replay header. The signing key is an ES256 (ECDSA P-256) key.
+
+**Request format:**
+```
+POST /acme/new-order
+Content-Type: application/jose+json
+
+{
+  "protected": base64url({ "alg": "ES256", "kid": "...", "nonce": "...", "url": "..." }),
+  "payload": base64url({ ... }),
+  "signature": base64url(sign(protected.payload))
+}
+```
+
+**Key flows:**
+- **New account:** POST to `newAccount` with JWK in protected header (no KID yet), payload `{"termsOfServiceAgreed": true, "contact": ["mailto:..."]}`
+- **New order:** POST to `newOrder` with payload `{"identifiers": [{"type": "dns", "value": "..."}]}`
+- **Answer challenge:** POST to challenge URL with payload `{}`
+- **Finalize:** POST to finalize URL with payload `{"csr": base64url(DER CSR)}`
+- **Get nonce:** HEAD to `newNonce` URL
+- **POST-as-GET:** POST with empty string payload (`""`) to read resources
+
+**JWK Thumbprint (for key authorization):**
+The key authorization string served for HTTP-01 is `{token}.{thumbprint}` where thumbprint is the SHA-256 hash of the canonical JWK (RFC 7638): `{"crv":"P-256","kty":"EC","x":"...","y":"..."}` with keys sorted alphabetically.
 
 Public interface consumed by Program.cs:
 
 ```csharp
 public X509Certificate2? GetCertificate();  // Called by ServerCertificateSelector
-public void SetChallengeResponse(string token, string response);  // Internal, used during ACME flow
 public string? GetChallengeResponse(string token);  // Called by challenge middleware
 ```
 
@@ -67,11 +99,14 @@ if (!string.IsNullOrWhiteSpace(domain))
         sp.GetRequiredService<AcmeCertificateService>());
     builder.WebHost.UseKestrel(kestrel =>
     {
-        var acmeService = kestrel.ApplicationServices.GetRequiredService<AcmeCertificateService>();
         kestrel.Listen(IPAddress.Any, 80);
         kestrel.Listen(IPAddress.Any, 443, o => o.UseHttps(h =>
         {
-            h.ServerCertificateSelector = (ctx, name) => acmeService.GetCertificate();
+            h.ServerCertificateSelector = (ctx, name) =>
+            {
+                var acme = kestrel.ApplicationServices.GetRequiredService<AcmeCertificateService>();
+                return acme.GetCertificate();
+            };
         }));
     });
 }
@@ -101,7 +136,7 @@ Update the config section name reference from `LettuceEncrypt` to `Acme`.
 ### `OpenAudioOrchestrator.Web.csproj`
 
 - Remove: `<PackageReference Include="LettuceEncrypt" Version="1.3.3" />`
-- Add: `<PackageReference Include="ACMESharpCore" Version="2.2.0.148" />`
+- No new package added — uses only built-in .NET APIs
 
 ## Documentation Updates
 
@@ -115,7 +150,7 @@ After implementation, update all references to LettuceEncrypt:
 
 | File | Location | Purpose |
 |------|----------|---------|
-| ACME account | `{DataRoot}/acme-account.json` | Persisted account key so we reuse the same Let's Encrypt account across restarts |
+| ACME account | `{DataRoot}/acme-account.json` | ES256 key + account URL, persisted so we reuse the same Let's Encrypt account across restarts |
 | Certificate | `{DataRoot}/acme-cert.pfx` | The issued certificate + private key |
 
 Both stored in DataRoot so they're deployment-specific and survive app updates.
@@ -127,7 +162,7 @@ Both stored in DataRoot so they're deployment-specific and survive app updates.
 | ACME fails on startup, no existing cert | Generate self-signed cert, log warning, retry ACME in 1 hour |
 | ACME fails on startup, existing cert valid | Keep using existing cert, log warning, retry in 1 hour |
 | ACME fails on renewal | Keep current cert, log warning, retry in 1 hour |
-| HuggingFace/network unreachable | No impact (ACME is independent) |
+| Network unreachable | No impact on running app, ACME retries on schedule |
 | Domain not configured | ACME service not registered, app runs HTTP on port 5206 as before |
 
 ## Testing
