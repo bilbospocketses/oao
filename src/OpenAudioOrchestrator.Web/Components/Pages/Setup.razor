@@ -82,7 +82,7 @@
                 }
                 else if (!string.IsNullOrEmpty(_modelValidationMessage) && !_modelAlreadyPresent && DownloadSvc.IsModelPresent(_checkpointsDir))
                 {
-                    <div class="alert alert-warning" style="white-space: pre-wrap;">Model files incomplete:\n@_modelValidationMessage</div>
+                    <div class="alert alert-warning" style="white-space: pre-wrap;">Model files incomplete — @_modelValidationMessage</div>
                     <button class="btn btn-success w-100 mb-2" @onclick="StartModelDownload">Re-download Model (~11 GB)</button>
                     <button class="btn btn-outline-secondary w-100 mb-2" @onclick="GoToStep3">Continue anyway</button>
                     <button class="btn btn-outline-secondary w-100" @onclick="SkipModelDownload">Skip</button>
@@ -550,6 +550,8 @@
     private void StartModelDownload()
     {
         _error = null;
+        _modelValidationMessage = null;
+        _modelAlreadyPresent = false;
         DownloadSvc.StartModelDownload(_checkpointsDir, () => InvokeAsync(RefreshDownloadOutput));
         _downloadTimer = new Timer(_ => InvokeAsync(RefreshDownloadOutput), null, 1000, 2000);
     }

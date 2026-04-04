@@ -208,8 +208,26 @@ public partial class SetupDownloadService
 
         var targetPath = Path.Combine(checkpointsDir, "s2-pro");
 
+        // If the directory already exists as a git repo (partial download),
+        // run "git lfs pull" to fetch missing LFS files instead of re-cloning.
+        string fileName;
+        string[] args;
+        string? workingDir = null;
+
+        if (Directory.Exists(Path.Combine(targetPath, ".git")))
+        {
+            fileName = "git";
+            args = new[] { "lfs", "pull" };
+            workingDir = targetPath;
+        }
+        else
+        {
+            fileName = "git";
+            args = new[] { "clone", "https://huggingface.co/fishaudio/s2-pro", targetPath };
+        }
+
         _modelDownloadProcess = StartBackgroundProcess(
-            "git", new[] { "clone", "https://huggingface.co/fishaudio/s2-pro", targetPath },
+            fileName, args,
             _modelDownloadOutput,
             onOutput,
             exitCode =>
@@ -219,7 +237,8 @@ public partial class SetupDownloadService
                 else
                     ModelDownloadError = "Model download failed. Check the output for details.";
                 _modelDownloadProcess = null;
-            });
+            },
+            workingDir: workingDir);
     }
 
     public void StartDockerPull(string imageTag, Action? onOutput = null)
@@ -262,7 +281,8 @@ public partial class SetupDownloadService
         string fileName, string[] args,
         List<string> outputBuffer,
         Action? onOutput,
-        Action<int>? onExit)
+        Action<int>? onExit,
+        string? workingDir = null)
     {
         var psi = new ProcessStartInfo
         {
@@ -272,6 +292,8 @@ public partial class SetupDownloadService
             UseShellExecute = false,
             CreateNoWindow = true
         };
+        if (workingDir is not null)
+            psi.WorkingDirectory = workingDir;
         foreach (var arg in args) psi.ArgumentList.Add(arg);
 
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
