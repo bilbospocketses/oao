@@ -62,17 +62,17 @@ public class SetupSettingsService
             oao["DatabaseKey"] = protector.Protect(databaseKey);
         }
 
-        // LettuceEncrypt
-        var le = root["LettuceEncrypt"]!;
+        // Acme
+        var acme = root["Acme"]!;
         if (!string.IsNullOrWhiteSpace(domain))
         {
-            le["DomainNames"] = new JsonArray(domain);
-            le["EmailAddress"] = email ?? "";
+            acme["DomainNames"] = new JsonArray(domain);
+            acme["EmailAddress"] = email ?? "";
         }
         else
         {
-            le["DomainNames"] = new JsonArray();
-            le["EmailAddress"] = "";
+            acme["DomainNames"] = new JsonArray();
+            acme["EmailAddress"] = "";
         }
 
         var options = new JsonSerializerOptions { WriteIndented = true };

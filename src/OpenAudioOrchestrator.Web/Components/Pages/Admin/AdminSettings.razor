@@ -80,9 +80,9 @@
                 }
                 writer.WriteEndObject();
             }
-            else if (prop.Name == "LettuceEncrypt")
+            else if (prop.Name == "Acme")
             {
-                writer.WriteStartObject("LettuceEncrypt");
+                writer.WriteStartObject("Acme");
                 foreach (var sub in prop.Value.EnumerateObject())
                 {
                     if (sub.Name == "DomainNames")
