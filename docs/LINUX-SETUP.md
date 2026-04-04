@@ -51,6 +51,10 @@ sudo dnf install -y akmod-nvidia
 # NVIDIA Container Toolkit
 curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo | \
   sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+# Fedora 44+ moved the CA bundle — create symlink if missing
+if [ ! -f /etc/pki/tls/certs/ca-bundle.crt ]; then
+  sudo ln -s /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/pki/tls/certs/ca-bundle.crt
+fi
 sudo dnf install -y nvidia-container-toolkit
 
 # Docker CE (add official Docker repo first)
