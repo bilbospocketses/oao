@@ -59,7 +59,7 @@ The 7-step setup wizard guides you through:
 1. **Data Storage** — choose directories for checkpoints, references, output files, and the database
 2. **Model Download** — download the Fish Audio s2-pro model (~11 GB) from HuggingFace, or skip to download later
 3. **Docker Image** — download the Fish Speech Docker image (~5 GB)
-4. **Server Configuration** — database encryption key, container port range, optional domain + HTTPS via Let's Encrypt
+4. **Server Configuration** — database encryption key, container port range, optional domain + automatic HTTPS via Let's Encrypt
 5. **Admin Account** — create your administrator username and password
 6. **TOTP Setup** — scan QR code with your authenticator app
 7. **Complete** — review settings and restart instructions

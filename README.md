@@ -81,9 +81,9 @@ Most settings are configured automatically by the setup wizard. The app auto-det
 | `OpenAudioOrchestrator:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) |
 | `OpenAudioOrchestrator:AdminUser` | Seed admin username (env var override) |
 | `OpenAudioOrchestrator:AdminPassword` | Seed admin password (env var override) |
-| `LettuceEncrypt:AcceptTermsOfService` | Accept Let's Encrypt terms (default: `true`) |
-| `LettuceEncrypt:DomainNames` | Domain names for certificate |
-| `LettuceEncrypt:EmailAddress` | Email for certificate renewal notices |
+| `Acme:AcceptTermsOfService` | Accept Let's Encrypt terms (default: `true`) |
+| `Acme:DomainNames` | Domain names for certificate |
+| `Acme:EmailAddress` | Email for certificate renewal notices |
 
 For automated deployments, set `OpenAudioOrchestrator__AdminUser` and `OpenAudioOrchestrator__AdminPassword` as environment variables to seed the admin account on first run (TOTP setup required on first login).
 
@@ -97,7 +97,7 @@ For automated deployments, set `OpenAudioOrchestrator__AdminUser` and `OpenAudio
 - **YARP** — reverse proxy routing to the active Fish Speech container
 - **SignalR** — hub retained for future external client support (authorized)
 - **ASP.NET Identity** — authentication with mandatory TOTP/MFA; cookie operations via API endpoints for Blazor Server compatibility; rate-limited login; cryptographic TOTP verification tokens
-- **LettuceEncrypt** — automatic Let's Encrypt HTTPS on ports 80/443 (optional, enabled when Domain is configured)
+- **Custom ACME client** — automatic Let's Encrypt HTTPS on ports 80/443 using built-in .NET APIs (optional, enabled when Domain is configured)
 
 Design specifications are in [`docs/superpowers/specs/`](docs/superpowers/specs/).
 
