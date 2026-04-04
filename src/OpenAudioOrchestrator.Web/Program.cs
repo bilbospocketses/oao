@@ -19,17 +19,23 @@ using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// LettuceEncrypt (only if domain is configured)
+// ACME / Let's Encrypt (only if domain is configured)
 var domain = builder.Configuration["OpenAudioOrchestrator:Domain"];
 if (!string.IsNullOrWhiteSpace(domain))
 {
-    builder.Services.AddLettuceEncrypt();
+    builder.Services.AddSingleton<AcmeCertificateService>();
+    builder.Services.AddHostedService<AcmeCertificateService>(sp =>
+        sp.GetRequiredService<AcmeCertificateService>());
     builder.WebHost.UseKestrel(kestrel =>
     {
         kestrel.Listen(IPAddress.Any, 80);
         kestrel.Listen(IPAddress.Any, 443, o => o.UseHttps(h =>
         {
-            h.UseLettuceEncrypt(kestrel.ApplicationServices);
+            h.ServerCertificateSelector = (ctx, name) =>
+            {
+                var acme = kestrel.ApplicationServices.GetRequiredService<AcmeCertificateService>();
+                return acme.GetCertificate();
+            };
         }));
     });
 }
@@ -220,6 +226,10 @@ app.UseAuthorization();
 // Custom middleware
 app.UseMiddleware<SetupGuardMiddleware>();
 app.UseMiddleware<PostLoginRedirectMiddleware>();
+if (!string.IsNullOrWhiteSpace(domain))
+{
+    app.UseMiddleware<AcmeChallengeMiddleware>();
+}
 
 // Endpoint mapping
 // UseAntiforgery() MUST come before any endpoint mapping so that all mapped
