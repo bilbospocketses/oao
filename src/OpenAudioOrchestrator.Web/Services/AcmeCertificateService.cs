@@ -399,9 +399,11 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
             signature = signatureB64
         });
 
+        var content = new StringContent(jws, Encoding.UTF8);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/jose+json");
         var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            Content = new StringContent(jws, Encoding.UTF8, "application/jose+json")
+            Content = content
         };
         if (accept is not null)
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(accept));
