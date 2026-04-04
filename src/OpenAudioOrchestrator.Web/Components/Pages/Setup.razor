@@ -130,7 +130,7 @@
             {
                 @* --- Step 3: Docker Image --- *@
                 <h5>Download Docker Image</h5>
-                <p class="text-muted">Open Audio Orchestrator runs the TTS model inside a Docker container. The required image is approximately 12 GB.</p>
+                <p class="text-muted">Open Audio Orchestrator runs the TTS model inside a Docker container. The required image is approximately 5 GB.</p>
 
                 @if (_dockerImagePresent)
                 {
@@ -172,7 +172,7 @@
                 }
                 else
                 {
-                    <button class="btn btn-success w-100" @onclick="StartDockerPull">Download Docker Image (~12 GB)</button>
+                    <button class="btn btn-success w-100" @onclick="StartDockerPull">Download Docker Image (~5 GB)</button>
                 }
 
                 <div class="text-center mt-4">
