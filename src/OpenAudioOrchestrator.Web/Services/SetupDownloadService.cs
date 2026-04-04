@@ -16,8 +16,8 @@ public partial class SetupDownloadService
     private readonly List<string> _dockerPullOutput = new();
     private readonly object _lock = new();
 
-    public bool IsModelDownloading => _modelDownloadProcess is not null && !_modelDownloadProcess.HasExited;
-    public bool IsDockerPulling => _dockerPullProcess is not null && !_dockerPullProcess.HasExited;
+    public bool IsModelDownloading => IsProcessRunning(_modelDownloadProcess);
+    public bool IsDockerPulling => IsProcessRunning(_dockerPullProcess);
     public bool ModelDownloadCompleted { get; private set; }
     public bool DockerPullCompleted { get; private set; }
     public string? ModelDownloadError { get; private set; }
@@ -35,6 +35,13 @@ public partial class SetupDownloadService
     public SetupDownloadService(ILogger<SetupDownloadService> logger)
     {
         _logger = logger;
+    }
+
+    private static bool IsProcessRunning(Process? process)
+    {
+        if (process is null) return false;
+        try { return !process.HasExited; }
+        catch (InvalidOperationException) { return false; }
     }
 
     internal static void ValidateImageTag(string imageTag)
@@ -142,6 +149,7 @@ public partial class SetupDownloadService
                     ModelDownloadCompleted = true;
                 else
                     ModelDownloadError = "Model download failed. Check the output for details.";
+                _modelDownloadProcess = null;
             });
     }
 
@@ -165,6 +173,7 @@ public partial class SetupDownloadService
                     DockerPullCompleted = true;
                 else
                     DockerPullError = "Docker image pull failed. Check the output for details.";
+                _dockerPullProcess = null;
             });
     }
 

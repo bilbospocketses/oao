@@ -13,3 +13,4 @@ publish/
 node_modules/
 dist/
 .dp-keys/
+.claude/settings.local.json
