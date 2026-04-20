@@ -99,7 +99,7 @@ Show the user a concise summary of findings by category count (e.g., "3 Critical
 For each selected finding, fix it in the relevant file. Group related fixes into logical commits. Run tests after each group of fixes:
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator
+cd <repo>
 dotnet test tests/FishAudioOrchestrator.Tests/
 ```
 
@@ -142,7 +142,7 @@ public async Task AppUser_ThemePreference_DefaultsToDark()
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator
+cd <repo>
 dotnet test tests/FishAudioOrchestrator.Tests/ --filter "AppUser_ThemePreference_DefaultsToDark"
 ```
 
@@ -198,7 +198,7 @@ git commit -m "feat: add ThemePreference property to AppUser entity"
 - [ ] **Step 1: Generate the migration**
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator\src\FishAudioOrchestrator.Web
+cd <repo>/src/FishAudioOrchestrator.Web
 dotnet ef migrations add AddThemePreference
 ```
 
@@ -209,7 +209,7 @@ Check that the migration file exists and contains an `AddColumn` for `ThemePrefe
 - [ ] **Step 3: Commit**
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator
+cd <repo>
 git add src/FishAudioOrchestrator.Web/Data/Migrations/
 git commit -m "feat: add EF Core migration for ThemePreference column"
 ```
@@ -799,7 +799,7 @@ pre::-webkit-scrollbar-thumb,
 - [ ] **Step 2: Verify the app builds**
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator
+cd <repo>
 dotnet build src/FishAudioOrchestrator.Web/
 ```
 
@@ -1091,7 +1091,7 @@ The principle: if `bg-dark` is used for theming, remove it (let CSS variables ha
 - [ ] **Step 6: Verify the app builds and all tests pass**
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator
+cd <repo>
 dotnet build src/FishAudioOrchestrator.Web/
 dotnet test tests/FishAudioOrchestrator.Tests/
 ```
@@ -1116,7 +1116,7 @@ git commit -m "feat: integrate theme system into layouts and components with tog
 - [ ] **Step 1: Run the app and visually test dark theme**
 
 ```bash
-cd C:\Users\jscha\source\repos\FishAudioOrchestrator\src\FishAudioOrchestrator.Web
+cd <repo>/src/FishAudioOrchestrator.Web
 dotnet run
 ```
 
