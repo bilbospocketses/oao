@@ -105,9 +105,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             {
                 opts.AddPolicy<string>("auth", _ =>
                     RateLimitPartition.GetNoLimiter<string>("unlimited"));
-                opts.GlobalLimiter = PartitionedRateLimiter.CreateChained(
-                    PartitionedRateLimiter.Create<HttpContext, string>(_ =>
-                        RateLimitPartition.GetNoLimiter<string>("unlimited")));
+                opts.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+                    RateLimitPartition.GetNoLimiter<string>("unlimited"));
             });
         });
     }

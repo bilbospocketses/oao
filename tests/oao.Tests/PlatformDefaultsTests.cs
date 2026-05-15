@@ -27,6 +27,12 @@ public class PlatformDefaultsTests
     }
 
     [Fact]
+    public void DbPath_EndsWithDbFileName()
+    {
+        Assert.EndsWith(PlatformDefaults.DbFileName, PlatformDefaults.DbPath);
+    }
+
+    [Fact]
     public void DockerEndpoint_ReturnsValidUri()
     {
         var result = PlatformDefaults.DockerEndpoint;

@@ -364,14 +364,12 @@
 
                     <div class="card border-secondary mb-3">
                         <div class="card-body">
-                            @if (!string.IsNullOrWhiteSpace(_domain))
-                            {
-                                <p>Restart the application, then navigate to <strong>https://@_domain</strong>.</p>
+                            @{
+                                var restartUrl = string.IsNullOrWhiteSpace(_domain)
+                                    ? "http://localhost:5206"
+                                    : $"https://{_domain}";
                             }
-                            else
-                            {
-                                <p>Restart the application, then navigate to <strong>http://localhost:5206</strong>.</p>
-                            }
+                            <p>Restart the application, then navigate to <strong>@restartUrl</strong>.</p>
                         </div>
                     </div>
                 }
