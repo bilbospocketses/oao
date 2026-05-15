@@ -74,9 +74,11 @@ For production deployments, run the app as a Windows service using [Servy](https
 
 Install Servy from its [releases page](https://github.com/aelassas/servy/releases) and ensure `servy-cli.exe` is on your `PATH` (or substitute its full path in the commands below).
 
+**Install path convention:** core app binaries land in `C:\Program Files\oao\current`; user settings, the SQLite database, ACME certs, Data-Protection keys, and downloaded model files land in `C:\ProgramData\oao`. The `oao__DataRoot` environment variable (Servy passes it through) tells the app where to read/write its data.
+
 ```powershell
-# Publish the app
-dotnet publish src/oao.Web -c Release -o C:\oao\app
+# Publish the app to the Program Files current-version directory (run elevated)
+dotnet publish src/oao.Web -c Release -o "C:\Program Files\oao\current"
 
 # Install as a service (run elevated)
 servy-cli install `
@@ -85,9 +87,9 @@ servy-cli install `
     --description "Open Audio Orchestrator dashboard for Fish Speech TTS containers" `
     --path "%ProgramFiles%\dotnet\dotnet.exe" `
     --params "oao.Web.dll" `
-    --startupDir "C:\oao\app" `
+    --startupDir "%ProgramFiles%\oao\current" `
     --startupType AutomaticDelayedStart `
-    --envVars "ASPNETCORE_URLS=http://0.0.0.0:5206;DOTNET_ENVIRONMENT=Production"
+    --envVars "ASPNETCORE_URLS=http://0.0.0.0:5206;DOTNET_ENVIRONMENT=Production;oao__DataRoot=%ProgramData%\oao"
 
 servy-cli start --name oao
 ```
