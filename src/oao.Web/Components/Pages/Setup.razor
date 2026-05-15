@@ -364,15 +364,13 @@
 
                     <div class="card border-secondary mb-3">
                         <div class="card-body">
-                            <p>Stop the application (<code>Ctrl+C</code> in the terminal) and restart with:</p>
-                            <pre class="text-info p-2 rounded">dotnet run --project src/oao.Web</pre>
                             @if (!string.IsNullOrWhiteSpace(_domain))
                             {
-                                <p>Then navigate to <strong>https://@_domain</strong></p>
+                                <p>Restart the application, then navigate to <strong>https://@_domain</strong>.</p>
                             }
                             else
                             {
-                                <p>Then navigate to <strong>http://localhost:5206</strong></p>
+                                <p>Restart the application, then navigate to <strong>http://localhost:5206</strong>.</p>
                             }
                         </div>
                     </div>
@@ -392,7 +390,7 @@
 
     // Step 1
     private string _rootDir = PlatformDefaults.DataRoot;
-    private string _dbFileName = "oao.db";
+    private string _dbFileName = PlatformDefaults.DbFileName;
     private string _checkpointsFolderName = "Checkpoints";
     private string _referencesFolderName = "References";
     private string _outputFolderName = "Output";

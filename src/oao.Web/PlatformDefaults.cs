@@ -5,8 +5,10 @@ public static class PlatformDefaults
     public static string DataRoot =>
         OperatingSystem.IsWindows() ? @"C:\oao" : "/opt/oao";
 
+    public static string DbFileName => "oao.db";
+
     public static string DbPath =>
-        Path.Combine(DataRoot, "oao.db");
+        Path.Combine(DataRoot, DbFileName);
 
     public static string DockerEndpoint =>
         OperatingSystem.IsWindows()

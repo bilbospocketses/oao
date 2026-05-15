@@ -21,6 +21,12 @@ public class PlatformDefaultsTests
     }
 
     [Fact]
+    public void DbFileName_IsOaoDb()
+    {
+        Assert.Equal("oao.db", PlatformDefaults.DbFileName);
+    }
+
+    [Fact]
     public void DockerEndpoint_ReturnsValidUri()
     {
         var result = PlatformDefaults.DockerEndpoint;
