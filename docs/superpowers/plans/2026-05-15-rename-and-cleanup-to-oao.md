@@ -1310,6 +1310,35 @@ After the merge succeeds, update the project-index entry (if needed) at `C:/User
 
 ---
 
+## Defensive notes for agent execution
+
+**Line-number drift.** Line numbers in this plan are accurate as of `master @ 083004d`. If the agent finds the file content has drifted (any commit landed on master between plan-write time and execution), do NOT trust the line numbers — find the target by grepping the exact "before" literal shown in the plan, and replace with the exact "after" literal. The pairs in this plan are anchored to literal content, not position. If the literal pattern itself has changed (e.g., the file was refactored), STOP and surface — that's a spec-vs-reality drift and needs the user.
+
+**Mass-replace verification.** After every PowerShell mass-replace (Task 1 Steps 4-5, Task 2 Step 6, Task 6 Steps 1-2, Task 6 Step 4), the agent MUST inspect the diff before staging:
+
+```powershell
+git diff --stat       # quick: count files changed, lines +/-
+git diff              # full: scroll through every hunk
+```
+
+Acceptable hunks for namespace mass-replace (Task 1):
+- `namespace OpenAudioOrchestrator.Web` → `namespace oao.Web`
+- `using OpenAudioOrchestrator.Web` → `using oao.Web`
+- Fully-qualified type references like `OpenAudioOrchestrator.Web.X` (rare but legitimate)
+- `@using OpenAudioOrchestrator.Web` → `@using oao.Web` (in .razor)
+- Embedded path literals like `src/OpenAudioOrchestrator.Web/foo` inside UI prose (correctly want this renamed)
+
+Unexpected hunks for namespace mass-replace — STOP and inspect:
+- Inside a regular `string` literal that LOOKS like a path but is actually a config-binding or display string. (Cross-check against the spec's "branding preserved" section before assuming the rename is correct.)
+- Inside an `[Obsolete]` or `[Description]` attribute that intentionally references the old name as historical.
+- Inside a test that intentionally pins the old-vs-new-name behavior.
+
+If unexpected hunks appear, do NOT blanket-accept — examine each one and decide per-line whether the rename is what we want.
+
+**Build-and-test gates are non-negotiable.** Each task ends with a `dotnet build` + `dotnet test` step. The agent MUST NOT proceed to the next task if the gate fails. A half-applied rename across a commit boundary is much harder to recover than fixing the current commit before moving on.
+
+**Test-failure-count comparison.** Tasks 1, 2, 3 all expect "same 3 pre-existing rate-limited failures, everything else passes". The agent should compare the failing-test names list against the baseline captured in Task 0 Step 8 — same names? Fine. Different names? Investigate.
+
 ## Notes on TDD for renames
 
 Pure renames (Tasks 1, 2, 3) don't fit the classic RED → GREEN → REFACTOR pattern because we aren't introducing new behavior — we're preserving existing behavior under new names. The TDD-equivalent discipline applied here is:
