@@ -32,7 +32,7 @@ public class TtsJobProcessor : BackgroundService
         _eventBus = eventBus;
         _logger = logger;
         var dataRoot = PlatformDefaults.ConfigValueOrDefault(
-            config["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
+            config["oao:DataRoot"], PlatformDefaults.DataRoot);
         _outputPath = Path.Combine(dataRoot, "Output");
         _jobSignal = jobSignal;
     }

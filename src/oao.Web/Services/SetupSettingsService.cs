@@ -50,8 +50,8 @@ public class SetupSettingsService
         // ConnectionStrings — use the user-specified database path
         root["ConnectionStrings"]!["Default"] = $"Data Source={Path.GetFullPath(databasePath)}";
 
-        // OpenAudioOrchestrator
-        var oao = root["OpenAudioOrchestrator"]!;
+        // oao
+        var oao = root["oao"]!;
         oao["DataRoot"] = dataRoot;
         oao["PortRange"]!["Start"] = portStart;
         oao["PortRange"]!["End"] = portEnd;

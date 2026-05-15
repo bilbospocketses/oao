@@ -27,7 +27,7 @@ public class VoiceLibraryServiceTests : IDisposable
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:DataRoot"] = _testDataRoot
+                ["oao:DataRoot"] = _testDataRoot
             })
             .Build();
 

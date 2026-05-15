@@ -44,7 +44,7 @@ public class TtsJobProcessorTests : IDisposable
         return new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:DataRoot"] = _testDataRoot
+                ["oao:DataRoot"] = _testDataRoot
             })
             .Build();
     }

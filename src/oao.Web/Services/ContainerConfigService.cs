@@ -16,12 +16,12 @@ public class ContainerConfigService : IContainerConfigService
     {
         _config = config;
         _context = context;
-        _networkName = config["OpenAudioOrchestrator:DockerNetworkName"] ?? "oao-network";
+        _networkName = config["oao:DockerNetworkName"] ?? "oao-network";
     }
 
     public CreateContainerParameters BuildCreateParams(ModelProfile profile)
     {
-        var dataRoot = _config["OpenAudioOrchestrator:DataRoot"]!;
+        var dataRoot = _config["oao:DataRoot"]!;
 
         var checkpointsRoot = Path.Combine(dataRoot, "Checkpoints");
         var subFolder = Path.GetRelativePath(checkpointsRoot, profile.CheckpointPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
@@ -101,8 +101,8 @@ public class ContainerConfigService : IContainerConfigService
 
     public async Task<int> AllocatePortAsync()
     {
-        var start = int.Parse(_config["OpenAudioOrchestrator:PortRange:Start"]!);
-        var end = int.Parse(_config["OpenAudioOrchestrator:PortRange:End"]!);
+        var start = int.Parse(_config["oao:PortRange:Start"]!);
+        var end = int.Parse(_config["oao:PortRange:End"]!);
 
         var usedPorts = await _context.ModelProfiles
             .Select(m => m.HostPort)

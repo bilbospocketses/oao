@@ -14,7 +14,7 @@ public class DockerNetworkServiceTests
         return new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:DockerNetworkName"] = networkName
+                ["oao:DockerNetworkName"] = networkName
             })
             .Build();
     }

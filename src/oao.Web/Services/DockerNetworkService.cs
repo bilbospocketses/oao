@@ -14,7 +14,7 @@ public class DockerNetworkService : IDockerNetworkService
     {
         _docker = docker;
         _logger = logger;
-        NetworkName = config["OpenAudioOrchestrator:DockerNetworkName"] ?? "oao-network";
+        NetworkName = config["oao:DockerNetworkName"] ?? "oao-network";
     }
 
     public async Task<string> EnsureNetworkExistsAsync()

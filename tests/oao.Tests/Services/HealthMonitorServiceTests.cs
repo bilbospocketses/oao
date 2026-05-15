@@ -30,7 +30,7 @@ public class HealthMonitorServiceTests
         return new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:HealthCheckIntervalSeconds"] = intervalSeconds.ToString()
+                ["oao:HealthCheckIntervalSeconds"] = intervalSeconds.ToString()
             })
             .Build();
     }

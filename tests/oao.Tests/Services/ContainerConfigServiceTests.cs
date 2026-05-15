@@ -24,11 +24,11 @@ public class ContainerConfigServiceTests
         return new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:PortRange:Start"] = portStart.ToString(),
-                ["OpenAudioOrchestrator:PortRange:End"] = portEnd.ToString(),
-                ["OpenAudioOrchestrator:DataRoot"] = dataRoot,
-                ["OpenAudioOrchestrator:DefaultImageTag"] = "fishaudio/fish-speech:server-cuda",
-                ["OpenAudioOrchestrator:DockerNetworkName"] = "oao-network"
+                ["oao:PortRange:Start"] = portStart.ToString(),
+                ["oao:PortRange:End"] = portEnd.ToString(),
+                ["oao:DataRoot"] = dataRoot,
+                ["oao:DefaultImageTag"] = "fishaudio/fish-speech:server-cuda",
+                ["oao:DockerNetworkName"] = "oao-network"
             })
             .Build();
     }

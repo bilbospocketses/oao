@@ -26,8 +26,8 @@ public class AdminSeedService : IAdminSeedService
 
     public async Task SeedIfConfiguredAsync()
     {
-        var adminUser = _config["OpenAudioOrchestrator:AdminUser"];
-        var adminPassword = _config["OpenAudioOrchestrator:AdminPassword"];
+        var adminUser = _config["oao:AdminUser"];
+        var adminPassword = _config["oao:AdminPassword"];
 
         if (string.IsNullOrWhiteSpace(adminUser) || string.IsNullOrWhiteSpace(adminPassword))
             return;

@@ -15,8 +15,8 @@ public class AdminSeedServiceTests
         string? adminUser = null, string? adminPassword = null)
     {
         var configData = new Dictionary<string, string?>();
-        if (adminUser is not null) configData["OpenAudioOrchestrator:AdminUser"] = adminUser;
-        if (adminPassword is not null) configData["OpenAudioOrchestrator:AdminPassword"] = adminPassword;
+        if (adminUser is not null) configData["oao:AdminUser"] = adminUser;
+        if (adminPassword is not null) configData["oao:AdminPassword"] = adminPassword;
 
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(configData)

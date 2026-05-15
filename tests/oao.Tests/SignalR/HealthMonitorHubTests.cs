@@ -29,7 +29,7 @@ public class HealthMonitorHubTests
         return new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:HealthCheckIntervalSeconds"] = "1"
+                ["oao:HealthCheckIntervalSeconds"] = "1"
             })
             .Build();
     }

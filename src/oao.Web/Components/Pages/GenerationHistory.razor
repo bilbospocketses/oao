@@ -180,7 +180,7 @@ else
             return;
 
         var dataRoot = PlatformDefaults.ConfigValueOrDefault(
-            Config["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
+            Config["oao:DataRoot"], PlatformDefaults.DataRoot);
         var outputRoot = Path.GetFullPath(Path.Combine(dataRoot, "Output"));
         var filePath = Path.GetFullPath(Path.Combine(outputRoot, log.OutputFileName));
 

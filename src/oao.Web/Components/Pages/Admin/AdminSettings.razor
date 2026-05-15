@@ -43,7 +43,7 @@
 
     protected override void OnInitialized()
     {
-        _fqdn = Config["OpenAudioOrchestrator:Domain"] ?? "";
+        _fqdn = Config["oao:Domain"] ?? "";
     }
 
     private async Task SaveFqdn()
@@ -68,9 +68,9 @@
 
         foreach (var prop in doc.RootElement.EnumerateObject())
         {
-            if (prop.Name == "OpenAudioOrchestrator")
+            if (prop.Name == "oao")
             {
-                writer.WriteStartObject("OpenAudioOrchestrator");
+                writer.WriteStartObject("oao");
                 foreach (var sub in prop.Value.EnumerateObject())
                 {
                     if (sub.Name == "Domain")

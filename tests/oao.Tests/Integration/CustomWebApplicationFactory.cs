@@ -40,9 +40,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["OpenAudioOrchestrator:DataRoot"] = _testDataRoot,
+                ["oao:DataRoot"] = _testDataRoot,
                 ["ConnectionStrings:Default"] = "Data Source=:memory:",
-                ["OpenAudioOrchestrator:Domain"] = ""
+                ["oao:Domain"] = ""
             });
         });
 

@@ -13,7 +13,7 @@ public class VoiceLibraryService : IVoiceLibraryService
 
     public VoiceLibraryService(IConfiguration config, AppDbContext context, IHttpClientFactory httpClientFactory)
     {
-        var dataRoot = config["OpenAudioOrchestrator:DataRoot"]!;
+        var dataRoot = config["oao:DataRoot"]!;
         _referencesPath = Path.GetFullPath(Path.Combine(dataRoot, "References"));
         _context = context;
         _httpClientFactory = httpClientFactory;

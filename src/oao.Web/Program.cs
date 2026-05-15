@@ -20,7 +20,7 @@ using Yarp.ReverseProxy.Configuration;
 var builder = WebApplication.CreateBuilder(args);
 
 // ACME / Let's Encrypt (only if domain is configured)
-var domain = builder.Configuration["OpenAudioOrchestrator:Domain"];
+var domain = builder.Configuration["oao:Domain"];
 if (!string.IsNullOrWhiteSpace(domain))
 {
     builder.Services.AddSingleton<AcmeCertificateService>();
@@ -61,7 +61,7 @@ builder.Services.AddRateLimiter(options =>
 
 // Data Protection (persistent key storage in DataRoot)
 var dataRoot = PlatformDefaults.ConfigValueOrDefault(
-    builder.Configuration["OpenAudioOrchestrator:DataRoot"], PlatformDefaults.DataRoot);
+    builder.Configuration["oao:DataRoot"], PlatformDefaults.DataRoot);
 // Store DP keys alongside the application, not in DataRoot (which can change during setup)
 var dpKeysPath = Path.Combine(builder.Environment.ContentRootPath, ".dp-keys");
 Directory.CreateDirectory(dpKeysPath);
@@ -75,7 +75,7 @@ ConfigurePlatformKeyProtection(dpBuilder, dpKeysPath);
 var connectionString = PlatformDefaults.ConfigValueOrDefault(
     builder.Configuration.GetConnectionString("Default"),
     $"Data Source={PlatformDefaults.DbPath}");
-var encryptedDbKey = builder.Configuration["OpenAudioOrchestrator:DatabaseKey"];
+var encryptedDbKey = builder.Configuration["oao:DatabaseKey"];
 if (!string.IsNullOrWhiteSpace(encryptedDbKey))
 {
     // Decrypt the database key using Data Protection.
@@ -146,7 +146,7 @@ builder.Services.ConfigureApplicationCookie(opts =>
 builder.Services.AddSingleton<IDockerClient>(_ =>
 {
     var endpoint = PlatformDefaults.ConfigValueOrDefault(
-        builder.Configuration["OpenAudioOrchestrator:DockerEndpoint"],
+        builder.Configuration["oao:DockerEndpoint"],
         PlatformDefaults.DockerEndpoint);
     return new DockerClientConfiguration(new Uri(endpoint)).CreateClient();
 });

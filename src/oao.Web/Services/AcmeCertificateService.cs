@@ -46,7 +46,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var dataRoot = _config["OpenAudioOrchestrator:DataRoot"];
+        var dataRoot = _config["oao:DataRoot"];
         if (string.IsNullOrWhiteSpace(dataRoot))
         {
             _logger.LogWarning("DataRoot not configured, ACME certificate service will not start");
@@ -147,9 +147,9 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
 
     private async Task RequestCertificateAsync(CancellationToken ct)
     {
-        var domain = _config["OpenAudioOrchestrator:Domain"]!;
+        var domain = _config["oao:Domain"]!;
         var email = _config["Acme:EmailAddress"] ?? "";
-        var dataRoot = _config["OpenAudioOrchestrator:DataRoot"]!;
+        var dataRoot = _config["oao:DataRoot"]!;
 
         _logger.LogInformation("Starting ACME certificate request for {Domain}", domain);
 

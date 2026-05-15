@@ -34,7 +34,7 @@ public class HealthMonitorService : BackgroundService
         _scopeFactory = scopeFactory;
         _docker = docker;
         _intervalSeconds = int.Parse(
-            config["OpenAudioOrchestrator:HealthCheckIntervalSeconds"] ?? "30");
+            config["oao:HealthCheckIntervalSeconds"] ?? "30");
         _logger = logger;
         _hub = hub;
         _gpuState = gpuState;
