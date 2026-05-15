@@ -1,3 +1,6 @@
+> **Note:** post-rename. References to `OpenAudioOrchestrator.*` paths and
+> config keys reflect their original names. Current equivalents are
+> `oao.*` and `oao:*`.
 # Enhanced Setup Wizard Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

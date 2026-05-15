@@ -6,6 +6,31 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 
 ---
 
+## [Unreleased]
+
+### Changed
+- Project renamed to `oao` everywhere (folders, csproj, sln, namespaces,
+  config section, cookie name, DP app name + cert CN, TOTP issuer,
+  default paths, DB filename).
+- **BREAKING:** existing installs cannot upgrade in place. Delete any
+  previous local DB + clear browser cookies; re-run Setup.
+- DB filename is now `oao.db` (was `AudioOrchestrator.db`).
+- TOTP issuer is now "Open Audio Orchestrator" (was `OpenAudioOrchestrator`);
+  existing authenticator entries continue to authenticate (the shared
+  secret is unchanged) but display the old label.
+
+### Removed
+- Setup wizard's `dotnet run --project src/...` instruction snippet on the
+  final-step card. Restart guidance now relies on the user's existing
+  terminal context.
+
+### Fixed
+- Auth integration tests are now deterministic — `RateLimiter` is
+  neutralized inside `CustomWebApplicationFactory`. The 3 pre-existing
+  rate-limit-induced flaky failures are eliminated.
+
+---
+
 ## 2026-04-04 — Replace LettuceEncrypt with Custom ACME Client
 
 ### HTTPS / Let's Encrypt

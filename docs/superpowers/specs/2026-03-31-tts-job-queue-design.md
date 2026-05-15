@@ -1,3 +1,6 @@
+> **Note:** post-rename. References to `OpenAudioOrchestrator.*` paths and
+> config keys reflect their original names. Current equivalents are
+> `oao.*` and `oao:*`.
 # TTS Background Job Queue — Design Spec
 
 ## Goal

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/OpenAudioOrchestrator.Web/wwwroot/logo.png" alt="Open Audio Orchestrator" width="128" />
+  <img src="src/oao.Web/wwwroot/logo.png" alt="Open Audio Orchestrator" width="128" />
 </p>
 
 # Open Audio Orchestrator
@@ -49,9 +49,9 @@ Platform-specific setup instructions:
 ## Quick Start
 
 ```bash
-git clone https://github.com/bilbospocketses/OpenAudioOrchestrator.git
-cd OpenAudioOrchestrator
-dotnet run --project src/OpenAudioOrchestrator.Web
+git clone https://github.com/bilbospocketses/oao.git
+cd oao
+dotnet run --project src/oao.Web
 ```
 
 Navigate to `http://localhost:5206` and complete the 7-step setup wizard. After setup, restart the app and log in with your admin credentials. See the platform setup guides above for detailed instructions.
@@ -65,27 +65,27 @@ Navigate to `http://localhost:5206` and complete the 7-step setup wizard. After 
 
 ## Configuration
 
-Most settings are configured automatically by the setup wizard. The app auto-detects your platform and applies appropriate defaults. For advanced use or manual changes, edit `src/OpenAudioOrchestrator.Web/appsettings.json`:
+Most settings are configured automatically by the setup wizard. The app auto-detects your platform and applies appropriate defaults. For advanced use or manual changes, edit `src/oao.Web/appsettings.json`:
 
 | Key | Description |
 |-----|-------------|
 | `ConnectionStrings:Default` | SQLite database path |
-| `OpenAudioOrchestrator:DockerEndpoint` | Docker API endpoint |
-| `OpenAudioOrchestrator:DataRoot` | Root directory for data files |
-| `OpenAudioOrchestrator:PortRange:Start` | Start of container port range (default: `9001`) |
-| `OpenAudioOrchestrator:PortRange:End` | End of container port range (default: `9099`) |
-| `OpenAudioOrchestrator:DefaultImageTag` | Default Fish Speech Docker image |
-| `OpenAudioOrchestrator:DockerNetworkName` | Docker bridge network name (default: `oao-network`) |
-| `OpenAudioOrchestrator:HealthCheckIntervalSeconds` | Health check frequency in seconds (default: `30`) |
-| `OpenAudioOrchestrator:Domain` | FQDN for Let's Encrypt (blank = localhost) |
-| `OpenAudioOrchestrator:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) |
-| `OpenAudioOrchestrator:AdminUser` | Seed admin username (env var override) |
-| `OpenAudioOrchestrator:AdminPassword` | Seed admin password (env var override) |
+| `oao:DockerEndpoint` | Docker API endpoint |
+| `oao:DataRoot` | Root directory for data files |
+| `oao:PortRange:Start` | Start of container port range (default: `9001`) |
+| `oao:PortRange:End` | End of container port range (default: `9099`) |
+| `oao:DefaultImageTag` | Default Fish Speech Docker image |
+| `oao:DockerNetworkName` | Docker bridge network name (default: `oao-network`) |
+| `oao:HealthCheckIntervalSeconds` | Health check frequency in seconds (default: `30`) |
+| `oao:Domain` | FQDN for Let's Encrypt (blank = localhost) |
+| `oao:DatabaseKey` | SQLCipher encryption key (Data Protection encrypted) |
+| `oao:AdminUser` | Seed admin username (env var override) |
+| `oao:AdminPassword` | Seed admin password (env var override) |
 | `Acme:AcceptTermsOfService` | Accept Let's Encrypt terms (default: `true`) |
 | `Acme:DomainNames` | Domain names for certificate |
 | `Acme:EmailAddress` | Email for certificate renewal notices |
 
-For automated deployments, set `OpenAudioOrchestrator__AdminUser` and `OpenAudioOrchestrator__AdminPassword` as environment variables to seed the admin account on first run (TOTP setup required on first login).
+For automated deployments, set `oao__AdminUser` and `oao__AdminPassword` as environment variables to seed the admin account on first run (TOTP setup required on first login).
 
 ## Architecture
 
@@ -108,10 +108,10 @@ Design specifications are in [`docs/superpowers/specs/`](docs/superpowers/specs/
 dotnet build
 
 # Run in development mode
-dotnet run --project src/OpenAudioOrchestrator.Web
+dotnet run --project src/oao.Web
 
 # Add an EF Core migration
-cd src/OpenAudioOrchestrator.Web
+cd src/oao.Web
 dotnet ef migrations add <MigrationName>
 ```
 
