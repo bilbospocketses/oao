@@ -1,10 +1,15 @@
+using System.Threading.RateLimiting;
 using Docker.DotNet;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Options;
 using oao.Web.Data;
 using oao.Web.Data.Entities;
 using oao.Web.Services;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -82,7 +87,27 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             // Override cookie policy for test (test server uses HTTP, not HTTPS)
             services.ConfigureApplicationCookie(opts =>
             {
-                opts.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.None;
+                opts.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            });
+
+            // Neutralize the production rate limiter for test runs. Auth endpoints
+            // decorated with RequireRateLimiting("auth") get unlimited capacity here.
+            // Production code is unchanged. If a future test needs to exercise rate-limit
+            // behavior, it should subclass this factory and skip applying this override.
+            //
+            // Strategy: strip the production IConfigureOptions<RateLimiterOptions> (which
+            // registers the "auth" FixedWindow policy via AddRateLimiter), then re-add the
+            // rate limiter with a no-limiter "auth" policy and an unlimited GlobalLimiter.
+            // Named policies are checked independently of GlobalLimiter in ASP.NET Core, so
+            // both must be replaced to guarantee no 429s in tests.
+            services.RemoveAll<IConfigureOptions<RateLimiterOptions>>();
+            services.AddRateLimiter(opts =>
+            {
+                opts.AddPolicy<string>("auth", _ =>
+                    RateLimitPartition.GetNoLimiter<string>("unlimited"));
+                opts.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+                    PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+                        RateLimitPartition.GetNoLimiter<string>("unlimited")));
             });
         });
     }
