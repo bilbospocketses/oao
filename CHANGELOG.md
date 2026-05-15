@@ -8,12 +8,17 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 
 ## [Unreleased]
 
+### Breaking changes
+- Existing installs cannot upgrade in place. Delete any previous local
+  DB + clear browser cookies, then re-run Setup. The rename changes the
+  default DB path, Data-Protection application name, cookie name, and
+  top-level config-section key — all of which invalidate prior local
+  state.
+
 ### Changed
 - Project renamed to `oao` everywhere (folders, csproj, sln, namespaces,
   config section, cookie name, DP app name + cert CN, TOTP issuer,
   default paths, DB filename).
-- **BREAKING:** existing installs cannot upgrade in place. Delete any
-  previous local DB + clear browser cookies; re-run Setup.
 - DB filename is now `oao.db` (was `AudioOrchestrator.db`).
 - TOTP issuer is now "Open Audio Orchestrator" (was `OpenAudioOrchestrator`);
   existing authenticator entries continue to authenticate (the shared
