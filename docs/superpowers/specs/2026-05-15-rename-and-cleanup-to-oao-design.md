@@ -1,7 +1,7 @@
 ---
 title: oao Rename + Cleanup Design
 date: 2026-05-15
-status: draft (awaiting user approval)
+status: shipped (merged 2026-05-15 in d3d04b6)
 branch: chore/rename-and-cleanup-to-oao
 ---
 
