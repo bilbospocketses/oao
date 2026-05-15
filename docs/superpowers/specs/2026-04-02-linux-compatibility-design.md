@@ -1,3 +1,6 @@
+> **Note:** post-rename. References to `OpenAudioOrchestrator.*` paths and
+> config keys reflect their original names. Current equivalents are
+> `oao.*` and `oao:*`.
 # Linux Compatibility — Design Spec
 
 **Date:** 2026-04-02

@@ -45,9 +45,9 @@ Or download from [git-scm.com](https://git-scm.com/) and [git-lfs.com](https://g
 ## Build and Run
 
 ```powershell
-git clone https://github.com/bilbospocketses/OpenAudioOrchestrator.git
-cd OpenAudioOrchestrator
-dotnet run --project src/OpenAudioOrchestrator.Web
+git clone https://github.com/bilbospocketses/oao.git
+cd oao
+dotnet run --project src/oao.Web
 ```
 
 Navigate to `http://localhost:5206` and complete the setup wizard. The wizard detects your platform and shows Windows-appropriate defaults.
@@ -76,13 +76,13 @@ For production deployments, you can run the app as a Windows service using [NSSM
 
 ```powershell
 # Publish the app
-dotnet publish src/OpenAudioOrchestrator.Web -c Release -o C:\OpenAudioOrchestrator\app
+dotnet publish src/oao.Web -c Release -o C:\oao\app
 
 # Install as a service
-nssm install OpenAudioOrchestrator "C:\Program Files\dotnet\dotnet.exe" "OpenAudioOrchestrator.Web.dll"
-nssm set OpenAudioOrchestrator AppDirectory "C:\OpenAudioOrchestrator\app"
-nssm set OpenAudioOrchestrator AppEnvironmentExtra "ASPNETCORE_URLS=http://0.0.0.0:5206" "DOTNET_ENVIRONMENT=Production"
-nssm start OpenAudioOrchestrator
+nssm install oao "C:\Program Files\dotnet\dotnet.exe" "oao.Web.dll"
+nssm set oao AppDirectory "C:\oao\app"
+nssm set oao AppEnvironmentExtra "ASPNETCORE_URLS=http://0.0.0.0:5206" "DOTNET_ENVIRONMENT=Production"
+nssm start oao
 ```
 
 ## Troubleshooting

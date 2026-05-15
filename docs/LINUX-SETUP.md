@@ -104,9 +104,9 @@ You should see your GPU listed. If this fails, check that the NVIDIA Container T
 ## Build and Run
 
 ```bash
-git clone https://github.com/bilbospocketses/OpenAudioOrchestrator.git
-cd OpenAudioOrchestrator
-dotnet run --project src/OpenAudioOrchestrator.Web
+git clone https://github.com/bilbospocketses/oao.git
+cd oao
+dotnet run --project src/oao.Web
 ```
 
 Navigate to `http://localhost:5206` and complete the setup wizard. The wizard detects your platform and shows Linux-appropriate defaults.
@@ -140,8 +140,8 @@ sudo useradd -r -s /usr/sbin/nologin oao
 ### 2. Publish the app
 
 ```bash
-dotnet publish src/OpenAudioOrchestrator.Web -c Release -o /opt/OpenAudioOrchestrator/app
-sudo chown -R oao:oao /opt/OpenAudioOrchestrator
+dotnet publish src/oao.Web -c Release -o /opt/oao/app
+sudo chown -R oao:oao /opt/oao
 ```
 
 ### 3. Add the service user to the docker group
@@ -163,8 +163,8 @@ Requires=docker.service
 [Service]
 Type=notify
 User=oao
-WorkingDirectory=/opt/OpenAudioOrchestrator/app
-ExecStart=/usr/bin/dotnet OpenAudioOrchestrator.Web.dll
+WorkingDirectory=/opt/oao/app
+ExecStart=/usr/bin/dotnet oao.Web.dll
 Restart=on-failure
 RestartSec=10
 Environment=ASPNETCORE_URLS=http://0.0.0.0:5206
