@@ -70,20 +70,38 @@ After completing the wizard, stop the app (Ctrl+C) and restart it. Log in with y
 
 ## Running as a Windows Service
 
-For production deployments, you can run the app as a Windows service using [NSSM](https://nssm.cc/) or the built-in `sc.exe`:
+For production deployments, run the app as a Windows service using [Servy](https://github.com/aelassas/servy).
 
-### Using NSSM (recommended)
+Install Servy from its [releases page](https://github.com/aelassas/servy/releases) and ensure `servy-cli.exe` is on your `PATH` (or substitute its full path in the commands below).
 
 ```powershell
 # Publish the app
 dotnet publish src/oao.Web -c Release -o C:\oao\app
 
-# Install as a service
-nssm install oao "C:\Program Files\dotnet\dotnet.exe" "oao.Web.dll"
-nssm set oao AppDirectory "C:\oao\app"
-nssm set oao AppEnvironmentExtra "ASPNETCORE_URLS=http://0.0.0.0:5206" "DOTNET_ENVIRONMENT=Production"
-nssm start oao
+# Install as a service (run elevated)
+servy-cli install `
+    --name oao `
+    --displayName "Open Audio Orchestrator" `
+    --description "Open Audio Orchestrator dashboard for Fish Speech TTS containers" `
+    --path "%ProgramFiles%\dotnet\dotnet.exe" `
+    --params "oao.Web.dll" `
+    --startupDir "C:\oao\app" `
+    --startupType AutomaticDelayedStart `
+    --envVars "ASPNETCORE_URLS=http://0.0.0.0:5206;DOTNET_ENVIRONMENT=Production"
+
+servy-cli start --name oao
 ```
+
+Manage the service with the same `--name oao` argument:
+
+```powershell
+servy-cli status    --name oao
+servy-cli restart   --name oao
+servy-cli stop      --name oao
+servy-cli uninstall --name oao
+```
+
+**First-run note:** Servy registers a Windows Event Log source named `Servy` on first invocation, which requires Administrator elevation. After that one-time registration, day-to-day commands can run as a normal user.
 
 ## Troubleshooting
 
