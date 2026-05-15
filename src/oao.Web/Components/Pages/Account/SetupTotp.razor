@@ -69,7 +69,7 @@
         }
 
         _mustSetup = _user.MustSetupTotp;
-        var (manualKey, qrDataUri) = await TotpService.GenerateSetupInfoAsync(_user, "OpenAudioOrchestrator");
+        var (manualKey, qrDataUri) = await TotpService.GenerateSetupInfoAsync(_user, "Open Audio Orchestrator");
         _manualKey = manualKey;
         _qrDataUri = qrDataUri;
     }

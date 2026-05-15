@@ -40,7 +40,7 @@ public class TotpServiceTests
         await userMgr.CreateAsync(user, "Test123!@");
 
         var service = new TotpService(userMgr);
-        var (manualKey, qrDataUri) = await service.GenerateSetupInfoAsync(user, "OpenAudioOrchestrator");
+        var (manualKey, qrDataUri) = await service.GenerateSetupInfoAsync(user, "Open Audio Orchestrator");
 
         Assert.False(string.IsNullOrWhiteSpace(manualKey));
         Assert.StartsWith("data:image/png;base64,", qrDataUri);
@@ -92,7 +92,7 @@ public class TotpServiceTests
         await userMgr.CreateAsync(user, "Test123!@");
 
         var service = new TotpService(userMgr);
-        var (manualKey, _) = await service.GenerateSetupInfoAsync(user, "OpenAudioOrchestrator");
+        var (manualKey, _) = await service.GenerateSetupInfoAsync(user, "Open Audio Orchestrator");
 
         // Reload so security stamp is current
         var freshUser = await userMgr.FindByNameAsync("testuser");
@@ -118,7 +118,7 @@ public class TotpServiceTests
         await userMgr.CreateAsync(user, "Test123!@");
 
         var service = new TotpService(userMgr);
-        await service.GenerateSetupInfoAsync(user, "OpenAudioOrchestrator");
+        await service.GenerateSetupInfoAsync(user, "Open Audio Orchestrator");
 
         var result = await service.VerifyCodeAsync(user, "000000");
         Assert.False(result);

@@ -3,10 +3,10 @@ namespace oao.Web;
 public static class PlatformDefaults
 {
     public static string DataRoot =>
-        OperatingSystem.IsWindows() ? @"C:\MyOpenAudioProj" : "/opt/OpenAudioOrchestrator";
+        OperatingSystem.IsWindows() ? @"C:\oao" : "/opt/oao";
 
     public static string DbPath =>
-        Path.Combine(DataRoot, "AudioOrchestrator.db");
+        Path.Combine(DataRoot, "oao.db");
 
     public static string DockerEndpoint =>
         OperatingSystem.IsWindows()

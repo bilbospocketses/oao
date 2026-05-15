@@ -66,7 +66,7 @@ var dataRoot = PlatformDefaults.ConfigValueOrDefault(
 var dpKeysPath = Path.Combine(builder.Environment.ContentRootPath, ".dp-keys");
 Directory.CreateDirectory(dpKeysPath);
 var dpBuilder = builder.Services.AddDataProtection()
-    .SetApplicationName("OpenAudioOrchestrator")
+    .SetApplicationName("oao")
     .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
 ConfigurePlatformKeyProtection(dpBuilder, dpKeysPath);
 
@@ -82,7 +82,7 @@ if (!string.IsNullOrWhiteSpace(encryptedDbKey))
     // Build a temporary provider to access the protector before full DI is ready.
     var tempServices = new ServiceCollection();
     var tempDpBuilder = tempServices.AddDataProtection()
-        .SetApplicationName("OpenAudioOrchestrator")
+        .SetApplicationName("oao")
         .PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
     ConfigurePlatformKeyProtection(tempDpBuilder, dpKeysPath);
 #pragma warning disable ASP0000 // Intentional: need DataProtection before full DI is built
@@ -128,7 +128,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opts =>
 
 builder.Services.ConfigureApplicationCookie(opts =>
 {
-    opts.Cookie.Name = ".OAO.Auth";
+    opts.Cookie.Name = ".oao.Auth";
     opts.Cookie.HttpOnly = true;
     opts.Cookie.SameSite = SameSiteMode.Strict;
     // Use Always when an HTTPS domain is configured (production); fall back to
@@ -260,7 +260,7 @@ public partial class Program
         {
             using var rsa = RSA.Create(2048);
             var req = new CertificateRequest(
-                "CN=OpenAudioOrchestrator-DataProtection",
+                "CN=oao-DataProtection",
                 rsa,
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);

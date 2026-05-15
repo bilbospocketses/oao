@@ -392,7 +392,7 @@
 
     // Step 1
     private string _rootDir = PlatformDefaults.DataRoot;
-    private string _dbFileName = "AudioOrchestrator.db";
+    private string _dbFileName = "oao.db";
     private string _checkpointsFolderName = "Checkpoints";
     private string _referencesFolderName = "References";
     private string _outputFolderName = "Output";
@@ -693,7 +693,7 @@
         await UserManager.AddToRoleAsync(user, "Admin");
         _createdUser = user;
 
-        var (manualKey, qrDataUri) = await TotpService.GenerateSetupInfoAsync(user, "OpenAudioOrchestrator");
+        var (manualKey, qrDataUri) = await TotpService.GenerateSetupInfoAsync(user, "Open Audio Orchestrator");
         _manualKey = manualKey;
         _qrDataUri = qrDataUri;
         _step = 6;

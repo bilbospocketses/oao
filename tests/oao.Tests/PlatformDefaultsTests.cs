@@ -17,7 +17,7 @@ public class PlatformDefaultsTests
     {
         var result = PlatformDefaults.DbPath;
         Assert.StartsWith(PlatformDefaults.DataRoot, result);
-        Assert.EndsWith("AudioOrchestrator.db", result);
+        Assert.EndsWith("oao.db", result);
     }
 
     [Fact]
