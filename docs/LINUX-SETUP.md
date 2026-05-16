@@ -139,9 +139,12 @@ sudo useradd -r -s /usr/sbin/nologin oao
 
 ### 2. Publish the app
 
+App binaries live in `/opt/oao/app` (Linux convention for self-contained software). Stateful data — SQLite database, ACME certs, Data-Protection keys, downloaded model files — lives in `/var/lib/oao` (the default `DataRoot`).
+
 ```bash
+sudo mkdir -p /opt/oao/app /var/lib/oao
 dotnet publish src/oao.Web -c Release -o /opt/oao/app
-sudo chown -R oao:oao /opt/oao
+sudo chown -R oao:oao /opt/oao /var/lib/oao
 ```
 
 ### 3. Add the service user to the docker group
