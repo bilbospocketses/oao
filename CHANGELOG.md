@@ -19,6 +19,10 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 - Project renamed to `oao` everywhere (folders, csproj, sln, namespaces,
   config section, cookie name, DP app name + cert CN, TOTP issuer,
   default paths, DB filename).
+- Default `DataRoot` now follows the host's stateful-service-data
+  convention: `C:\ProgramData\oao` on Windows, `/var/lib/oao` on Linux.
+  Both paths exist (or are auto-created by the OS / service install
+  step) and are writable by service accounts without elevation surprises.
 - DB filename is now `oao.db` (was `AudioOrchestrator.db`).
 - TOTP issuer is now "Open Audio Orchestrator" (was `OpenAudioOrchestrator`);
   existing authenticator entries continue to authenticate (the shared

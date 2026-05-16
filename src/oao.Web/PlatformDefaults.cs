@@ -3,7 +3,7 @@ namespace oao.Web;
 public static class PlatformDefaults
 {
     public static string DataRoot =>
-        OperatingSystem.IsWindows() ? @"C:\oao" : "/opt/oao";
+        OperatingSystem.IsWindows() ? @"C:\ProgramData\oao" : "/var/lib/oao";
 
     public static string DbFileName => "oao.db";
 
