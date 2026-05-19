@@ -166,6 +166,28 @@ signing layers that the audit didn't cover.
   `github_owned_allowed: true`). All SHA pins reuse the
   control-menu-validated commit SHAs (not annotated-tag objects)
   per the `feedback_action_sha_pin_commit_not_tag_object.md` rule.
+- **Phase G follow-up — `Scorecard analysis` added to
+  `required_status_checks`** — after PR-trigger run (39s) and
+  post-merge push-trigger run (56s, `publish_results: true` fired)
+  both completed clean, branch ruleset `16570488` was updated to
+  include `Scorecard analysis` (integration_id 15368) alongside
+  the existing `build-and-test`, `Analyze (csharp)`, and
+  `Analyze (actions)`. Four required checks now gate PR merge.
+  API-only change, no master commit beyond this CHANGELOG entry.
+  GitHub Rules API note: ruleset updates require `PUT
+  /repos/{owner}/{repo}/rulesets/{ruleset_id}` with the full
+  `rules` array; `PATCH` returns 404. Initial Scorecard SARIF
+  baseline on master = 5 open alerts, all expected for a solo
+  C# personal project (`CIIBestPracticesID` no badge,
+  `MaintainedID` transient — Scorecard's 90-day-young-repo
+  warning will lapse around 2026-08-16 from the Phase A
+  2026-05-18 repo recreate, `CodeReviewID` solo self-merge
+  unscoreable positive, `BranchProtectionID` known Scorecard
+  limitation re: Rules API vs classic Branch Protection — same
+  finding present on control-menu's Scorecard baseline,
+  `FuzzingID` no fuzzing setup). Findings sit in Security →
+  Code scanning alerts alongside CodeQL; they do not fail the
+  check (which gates workflow completion, not finding count).
 
 ### Dependency bumps (Dependabot)
 
