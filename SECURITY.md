@@ -77,5 +77,7 @@ endpoints. The Let's Encrypt integration uses an in-house ACME v2 client
 (not the unmaintained LettuceEncrypt / Certes libraries).
 
 Repository-side: Dependabot alerts + automated security updates, secret
-scanning + push protection, CodeQL default setup (`csharp`), and private
-vulnerability reporting are all enabled.
+scanning + push protection, CodeQL default setup (`csharp` + `actions`),
+private vulnerability reporting, and a branch-protection ruleset on
+`master` (`required_signatures`, `required_status_checks: build-and-test`,
+`pull_request` enforced, force-push and deletion blocked) are all enabled.
