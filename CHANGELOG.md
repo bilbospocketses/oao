@@ -146,6 +146,26 @@ signing layers that the audit didn't cover.
   This CHANGELOG entry is the entire diff (plus the
   `todo_oao.md` Phase F record). First PR to exercise the new
   required status checks.
+- **Phase G — OpenSSF Scorecard supply-chain scoring** — adds
+  `.github/workflows/scorecard.yml`, mirroring control-menu's
+  2026-05-19 wave. Cross-repo carryover; no Velopack coupling.
+  Workflow scores the repo against the OSSF Scorecard check suite
+  (Branch-Protection, Code-Review, Dangerous-Workflow,
+  Dependency-Update-Tool, Maintained, Pinned-Dependencies, SAST,
+  Security-Policy, Signed-Releases, Token-Permissions, etc.) and
+  uploads SARIF to the Security tab alongside CodeQL. Triggers:
+  weekly cron (Monday 13:00 UTC), `branch_protection_rule` (catches
+  ruleset drift), `push` to master, `pull_request` to master.
+  `publish_results` gated to push events only — PR runs would
+  publish a branch-HEAD SHA not on master yet and the OpenSSF
+  webapp verifier rejects those as "imposter commit". Allowlist
+  patched: `ossf/scorecard-action@*` added to `patterns_allowed`
+  (the only non-GitHub-owned action used by the workflow;
+  `actions/checkout`, `actions/upload-artifact`, and
+  `github/codeql-action/upload-sarif` are covered by
+  `github_owned_allowed: true`). All SHA pins reuse the
+  control-menu-validated commit SHAs (not annotated-tag objects)
+  per the `feedback_action_sha_pin_commit_not_tag_object.md` rule.
 
 ### Dependency bumps (Dependabot)
 
