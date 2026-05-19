@@ -62,8 +62,12 @@ builder.Services.AddRateLimiter(options =>
 // Data Protection (persistent key storage in DataRoot)
 var dataRoot = PlatformDefaults.ConfigValueOrDefault(
     builder.Configuration["oao:DataRoot"], PlatformDefaults.DataRoot);
-// Store DP keys alongside the application, not in DataRoot (which can change during setup)
-var dpKeysPath = Path.Combine(builder.Environment.ContentRootPath, ".dp-keys");
+// Store DP keys alongside the application, not in DataRoot (which can change during setup).
+// Tests override this via `oao:DpKeysPath` config to isolate per-WebApplicationFactory and
+// avoid a parallel-write race on `dp-key-protection.pfx`.
+var dpKeysPath = PlatformDefaults.ConfigValueOrDefault(
+    builder.Configuration["oao:DpKeysPath"],
+    Path.Combine(builder.Environment.ContentRootPath, ".dp-keys"));
 Directory.CreateDirectory(dpKeysPath);
 var dpBuilder = builder.Services.AddDataProtection()
     .SetApplicationName("oao")

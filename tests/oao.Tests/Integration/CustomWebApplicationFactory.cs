@@ -46,6 +46,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["oao:DataRoot"] = _testDataRoot,
+                // Isolate DP keys per WebApplicationFactory instance — production reads this
+                // key from config too (default falls back to ContentRootPath/.dp-keys). Without
+                // this override, parallel xUnit collections race on writing
+                // `dp-key-protection.pfx` and CI intermittently fails with IOException.
+                ["oao:DpKeysPath"] = Path.Combine(_testDataRoot, "dp-keys"),
                 ["ConnectionStrings:Default"] = "Data Source=:memory:",
                 ["oao:Domain"] = ""
             });
