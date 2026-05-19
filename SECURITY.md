@@ -78,6 +78,9 @@ endpoints. The Let's Encrypt integration uses an in-house ACME v2 client
 
 Repository-side: Dependabot alerts + automated security updates, secret
 scanning + push protection, CodeQL default setup (`csharp` + `actions`),
-private vulnerability reporting, and a branch-protection ruleset on
-`master` (`required_signatures`, `required_status_checks: build-and-test`,
-`pull_request` enforced, force-push and deletion blocked) are all enabled.
+private vulnerability reporting, a branch-protection ruleset on `master`
+(`required_signatures`, `required_status_checks: build-and-test` +
+`Analyze (csharp)` + `Analyze (actions)`, `pull_request` enforced with
+`allowed_merge_methods: ["squash", "merge"]`, force-push and deletion
+blocked), and a tag ruleset on `v*` tags (`required_signatures`,
+deletion blocked, force-update blocked) are all enabled.
