@@ -121,6 +121,31 @@ signing layers that the audit didn't cover.
   29 June 2007`. `gh api repos/.../license` now returns
   `spdx_id: "GPL-3.0"` (was `"NOASSERTION"`). Matches control-menu /
   ws-scrcpy-web / svgedit parity.
+- **Phase F ruleset tightening — 3 API-only gates** lifted from a
+  cross-repo audit relay (svgedit's just-finished post-parity sweep
+  surfaced the same three gaps on oao):
+  - **Branch ruleset 16570488 `pull_request` rule** —
+    `allowed_merge_methods` now `["squash", "merge"]` (was
+    `["merge", "squash", "rebase"]`). Belt-and-suspenders at the
+    ruleset layer for the squash-merge-only invariant; repo-level
+    `allow_rebase_merge: false` already blocks rebase in the UI,
+    this prevents a future repo-setting drift from re-introducing
+    the foot-gun.
+  - **Branch ruleset 16570488 `required_status_checks` rule** —
+    added `Analyze (csharp)` + `Analyze (actions)` alongside the
+    existing `build-and-test`. CodeQL checks now gate PR merge.
+    Integration ID `15368` (GitHub Actions). Means a future PR
+    that introduces a new CodeQL alert can't merge until the alert
+    is fixed or dismissed.
+  - **Tag ruleset 16572305** — added `required_signatures` to the
+    existing `deletion` + `non_fast_forward` rules. Future release
+    tags (e.g., `v1.0.0` when Velopack ships) must be SSH-signed
+    by the tagger. Historical phase tags (`v0.1.0-phase1` →
+    `v0.6.0-phase6`) are pre-rule and remain unsigned.
+- **No code changes in Phase F** — three `gh api PATCH` calls only.
+  This CHANGELOG entry is the entire diff (plus the
+  `todo_oao.md` Phase F record). First PR to exercise the new
+  required status checks.
 
 ### Dependency bumps (Dependabot)
 
