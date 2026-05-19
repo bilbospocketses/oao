@@ -87,6 +87,34 @@ signing layers that the audit didn't cover.
   DPAPI-cached). PR squash-merges are signed by GitHub's `web-flow` key.
   Pre-`8280409` back-catalog commits (256 total) remain Unverified —
   accepted rather than re-signed via filter-branch.
+- **CodeQL alerts triaged — Phase E (5 cleared)** — the recreated
+  repo's first CodeQL scan surfaced 5 alerts that weren't tracked in
+  the original Phase A → CM-parity-sweep work; this pass closes them.
+  (1+2) `cs/path-injection` in `AudioEndpoints.cs` — `/audio/output/`
+  now strips directory components via `Path.GetFileName()` (canonical
+  CodeQL sanitizer); `/audio/references/` adds an allowlist regex
+  (`^[a-zA-Z0-9 ._\-/]+$`) plus an explicit `..` reject before
+  `Path.Combine`. The existing canonicalize + `StartsWith` containment
+  check is preserved as belt-and-suspenders. (3+4) `cs/cleartext-storage`
+  in `AcmeCertificateService.cs` — the `{Kid}` structured-log
+  parameter is dropped from the two `LogInformation` calls (lines
+  177 + 211). The ACME account URL ("Kid", RFC 8555 §7.1.2) is a
+  public identifier, not a credential; the ECDsa private key is the
+  sensitive material and lives only in `accountKey` + the
+  permissions-protected `acme-account.json` (a separate
+  defense-in-depth concern not flagged by CodeQL, deferred). (5)
+  `cs/web/cookie-secure-not-set` in
+  `CustomWebApplicationFactory.cs` — dismissed via `gh api PATCH`
+  with `dismissed_reason: "used in tests"`; test-only WAF override
+  for the HTTP TestServer host. Production binds HTTPS only and uses
+  `CookieSecurePolicy.Always`.
+- **`LICENSE` SPDX auto-detection restored** — removed the 17-line
+  custom preamble + `---` separator that prevented GitHub's
+  licensee detector from matching the canonical GPL-3.0 text. File
+  now starts directly with `GNU GENERAL PUBLIC LICENSE / Version 3,
+  29 June 2007`. `gh api repos/.../license` now returns
+  `spdx_id: "GPL-3.0"` (was `"NOASSERTION"`). Matches control-menu /
+  ws-scrcpy-web / svgedit parity.
 
 ### Dependency bumps (Dependabot)
 

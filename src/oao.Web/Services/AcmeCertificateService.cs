@@ -174,7 +174,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
             accountKey = ECDsa.Create();
             accountKey.ImportECPrivateKey(Convert.FromBase64String(saved.PrivateKeyBase64), out _);
             accountKid = saved.AccountUrl;
-            _logger.LogInformation("Loaded existing ACME account {Kid}", accountKid);
+            _logger.LogInformation("Loaded existing ACME account");
         }
         else
         {
@@ -208,7 +208,7 @@ public sealed class AcmeCertificateService : IHostedService, IDisposable
             Directory.CreateDirectory(Path.GetDirectoryName(accountPath)!);
             await File.WriteAllTextAsync(accountPath,
                 JsonSerializer.Serialize(saved, new JsonSerializerOptions { WriteIndented = true }), ct);
-            _logger.LogInformation("Created new ACME account {Kid}", accountKid);
+            _logger.LogInformation("Created new ACME account");
         }
 
         // 4. Create order
