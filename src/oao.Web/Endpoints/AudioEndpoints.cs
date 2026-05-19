@@ -1,7 +1,12 @@
+using System.Text.RegularExpressions;
+
 namespace oao.Web.Endpoints;
 
 public static class AudioEndpoints
 {
+    private static readonly Regex SafeReferencePathRegex =
+        new(@"^[a-zA-Z0-9 ._\-/]+$", RegexOptions.Compiled);
+
     public static void MapAudioEndpoints(this WebApplication app)
     {
         var dataRoot = PlatformDefaults.ConfigValueOrDefault(
@@ -11,7 +16,11 @@ public static class AudioEndpoints
 
         app.MapGet("/audio/output/{fileName}", (string fileName) =>
         {
-            var filePath = Path.GetFullPath(Path.Combine(outputRoot, fileName));
+            var safeName = Path.GetFileName(fileName);
+            if (string.IsNullOrEmpty(safeName))
+                return Results.NotFound();
+
+            var filePath = Path.GetFullPath(Path.Combine(outputRoot, safeName));
             if (!filePath.StartsWith(outputRoot + Path.DirectorySeparatorChar))
                 return Results.NotFound();
 
@@ -23,6 +32,9 @@ public static class AudioEndpoints
 
         app.MapGet("/audio/references/{*filePath}", (string filePath) =>
         {
+            if (filePath.Contains("..") || !SafeReferencePathRegex.IsMatch(filePath))
+                return Results.NotFound();
+
             var fullPath = Path.GetFullPath(Path.Combine(referencesRoot, filePath.Replace('/', Path.DirectorySeparatorChar)));
             if (!fullPath.StartsWith(referencesRoot + Path.DirectorySeparatorChar))
                 return Results.NotFound();
