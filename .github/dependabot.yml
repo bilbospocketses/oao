@@ -24,6 +24,17 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Block major bumps on .NET-framework-aligned packages. The major
+    # version of Microsoft.AspNetCore.* and Microsoft.EntityFrameworkCore.*
+    # tracks the .NET SDK version (9.x → .NET 9; 10.x → .NET 10), so a
+    # major bump here implicitly requires a TargetFramework upgrade.
+    # Adopt those via a deliberate cross-cutting change, not a Dependabot
+    # PR. Patch + minor bumps within the current .NET major remain in.
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore.*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
