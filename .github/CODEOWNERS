@@ -1,0 +1,10 @@
+# CODEOWNERS — explicit ownership signal for the repo.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Solo-owned today; this file documents the ownership relationship for any
+# future contributor PR that lands. require_code_owner_review is NOT enabled
+# on the master ruleset because the only owner can't self-approve a solo PR
+# (GitHub blocks self-approval), which would deadlock all merges. The file
+# is informational + future-proofing.
+
+*       @bilbospocketses
