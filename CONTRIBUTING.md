@@ -69,7 +69,9 @@ land via pull request:
 3. **Push** your branch to `personal` / `origin`.
 4. **Open a pull request** against `master`.
 5. **Wait for CI** — the `build-and-test` job (windows-latest, dotnet 9.x)
-   must go green before the PR is mergeable.
+   plus the `Analyze (csharp)` and `Analyze (actions)` CodeQL jobs must
+   all go green before the PR is mergeable. Any new CodeQL alert
+   introduced by the PR blocks merge until fixed or dismissed.
 6. **Merge** via `gh pr merge --squash --delete-branch <N>` or the GitHub
    web UI's "Squash and merge" button. Squash is the only enabled merge
    method on this repo. The resulting commit is signed by GitHub's
@@ -82,7 +84,8 @@ ruleset's `required_signatures` rule.
 
 Direct push to `master` is blocked by the `pull_request` rule. Tag
 creation/deletion on `v*` tags is restricted by the `Protect release tags`
-ruleset.
+ruleset (deletion blocked, force-update blocked, `required_signatures`
+enforced — future release tags must be SSH-signed by the tagger).
 
 ## Reporting security issues
 
