@@ -4,6 +4,9 @@ namespace oao.Web.Endpoints;
 
 public static class AudioEndpoints
 {
+    private static readonly Regex SafeOutputFileNameRegex =
+        new(@"^[a-zA-Z0-9 ._\-]+$", RegexOptions.Compiled);
+
     private static readonly Regex SafeReferencePathRegex =
         new(@"^[a-zA-Z0-9 ._\-/]+$", RegexOptions.Compiled);
 
@@ -16,11 +19,10 @@ public static class AudioEndpoints
 
         app.MapGet("/audio/output/{fileName}", (string fileName) =>
         {
-            var safeName = Path.GetFileName(fileName);
-            if (string.IsNullOrEmpty(safeName))
+            if (fileName.Contains("..") || !SafeOutputFileNameRegex.IsMatch(fileName))
                 return Results.NotFound();
 
-            var filePath = Path.GetFullPath(Path.Combine(outputRoot, safeName));
+            var filePath = Path.GetFullPath(Path.Combine(outputRoot, fileName));
             if (!filePath.StartsWith(outputRoot + Path.DirectorySeparatorChar))
                 return Results.NotFound();
 

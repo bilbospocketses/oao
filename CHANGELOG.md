@@ -90,12 +90,18 @@ signing layers that the audit didn't cover.
 - **CodeQL alerts triaged — Phase E (5 cleared)** — the recreated
   repo's first CodeQL scan surfaced 5 alerts that weren't tracked in
   the original Phase A → CM-parity-sweep work; this pass closes them.
-  (1+2) `cs/path-injection` in `AudioEndpoints.cs` — `/audio/output/`
-  now strips directory components via `Path.GetFileName()` (canonical
-  CodeQL sanitizer); `/audio/references/` adds an allowlist regex
-  (`^[a-zA-Z0-9 ._\-/]+$`) plus an explicit `..` reject before
-  `Path.Combine`. The existing canonicalize + `StartsWith` containment
-  check is preserved as belt-and-suspenders. (3+4) `cs/cleartext-storage`
+  (1+2) `cs/path-injection` in `AudioEndpoints.cs` — both endpoints
+  now use an allowlist regex + explicit `..` reject before
+  `Path.Combine`: `/audio/output/` validates against
+  `^[a-zA-Z0-9 ._\-]+$` (single filename, no path separators);
+  `/audio/references/` validates against `^[a-zA-Z0-9 ._\-/]+$`
+  (wildcard catch-all supports subdirectories). The existing
+  canonicalize + `StartsWith` containment check is preserved as
+  belt-and-suspenders. (Initial Phase E attempt used
+  `Path.GetFileName()` on the output endpoint; CodeQL doesn't
+  recognize it as a sanitizer for `cs/path-injection`, so the
+  output endpoint was switched to the same allowlist pattern that
+  cleared the references endpoint.) (3+4) `cs/cleartext-storage`
   in `AcmeCertificateService.cs` — the `{Kid}` structured-log
   parameter is dropped from the two `LogInformation` calls (lines
   177 + 211). The ACME account URL ("Kid", RFC 8555 §7.1.2) is a
