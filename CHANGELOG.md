@@ -15,6 +15,96 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
   top-level config-section key — all of which invalidate prior local
   state.
 
+### Security (repo + supply-chain hardening, 2026-05-18 → 2026-05-19)
+
+Full lockdown of the GitHub-side surface to control-menu parity. The
+in-code security posture (29/30 audit findings, custom ACME v2,
+AntiforgeryToken, rate limiting, CSP, path-traversal guards) was already
+in place; this pass closes the repository-level + CI + supply-chain +
+signing layers that the audit didn't cover.
+
+- **Repo nuke+recreate to evict leaked Data Protection keys** — gitleaks
+  full-history sweep found 4 DPAPI-wrapped DP key XML files inadvertently
+  committed at `src/OpenAudioOrchestrator.Web/.dp-keys/key-*.xml` in
+  commit `6808945` (2026-04-02 FishAudio → OpenAudio rename) and removed
+  at HEAD in `9a04bb6` (2026-04-03, `.gitignore` updated). filter-repo
+  scrub alone left the dangling objects retrievable by SHA from GitHub's
+  cache, so escalated to a full repo `gh repo delete` + `gh repo create`
+  + re-push (256 commits + 6 phase tags). Old leak SHA `6808945` now
+  returns HTTP 422 "No commit found". Topics + wiki + discussions
+  restored post-recreate.
+- **GitHub-side security toggles enabled** — Dependabot vulnerability
+  alerts, Dependabot automated security updates, secret scanning + push
+  protection, CodeQL default setup (`csharp` + `actions`), private
+  vulnerability reporting.
+- **`SECURITY.md` added** (`8280409`, updated in `62d1821`) — vulnerability
+  reporting flow (GitHub PVR), supported versions, response expectations,
+  in/out scope, existing-posture summary. First signed commit on the
+  recreated repo (SSH key + Windows OpenSSH ssh-agent, `verified: true,
+  reason: "valid"` server-side).
+- **`CONTRIBUTING.md` added** (`21b941e`) — dev workflow + the
+  squash-merge rule callout + repo-ruleset behavior summary.
+- **`.github/dependabot.yml`** — `nuget` + `github-actions` ecosystems,
+  weekly schedule, 5-PR cap each. `ignore: semver-major` rules on
+  `Microsoft.AspNetCore.*` + `Microsoft.EntityFrameworkCore.*` (those
+  major versions track the .NET SDK; major bumps require a deliberate
+  TargetFramework upgrade, not a Dependabot PR — added after PR #7
+  proposed SignalR.Client 9 → 10).
+- **`.github/workflows/ci.yml`** — `build-and-test` job on
+  `windows-latest`, `dotnet 9.x` via SHA-pinned `actions/setup-dotnet`,
+  `dotnet restore/build/test oao.sln -c Release`, uploads
+  `test-results.trx` artifact (always). Workflow-level
+  `permissions: contents: read`. All actions SHA-pinned:
+  `actions/checkout@v6.0.2`, `actions/setup-dotnet@v5.2.0`,
+  `actions/upload-artifact@v7.0.1`.
+- **Branch protection ruleset `16570488` "Protect master"** — applies to
+  `master` (default branch). 6 rules: `deletion`, `non_fast_forward`,
+  `required_linear_history`, `required_signatures`,
+  `pull_request` (0 required reviewers — solo self-merge OK),
+  `required_status_checks: build-and-test` (non-strict). `bypass_actors:
+  []`. All changes to `master` must go through a PR; CI must pass; all
+  commits must be GitHub-verified.
+- **Tag protection ruleset `16572305` "Protect release tags"** — applies
+  to `refs/tags/v*`. Rules: `deletion`, `non_fast_forward`. Protects the
+  6 historical phase tags (`v0.1.0-phase1` through `v0.6.0-phase6`) from
+  accidental deletion or force-update; future release tags inherit
+  automatically.
+- **Repo-level Actions hardening** —
+  `allowed_actions: "selected"` with `github_owned_allowed: true,
+  verified_allowed: false, patterns_allowed: []` (third-party action
+  patterns will be added when the Velopack release workflow ships).
+  `sha_pinning_required: true` — workflow files cannot reference actions
+  by tag; SHA-pin is enforced at the platform level.
+- **Repo merge methods restricted to squash-only** —
+  `allow_merge_commit: false`, `allow_rebase_merge: false`,
+  `allow_squash_merge: true`. Removes the foot-guns from the merge UI;
+  enforces the global squash-merge rule (`web-flow` signs squash commits,
+  preserving the `required_signatures` invariant on master).
+- **End-to-end signing wired** — every commit on `master` since
+  `8280409` is `verified: true | reason: valid` per `gh api ...
+  --jq .commit.verification`. Local commits sign via the global
+  SSH-signing config (ed25519 + Windows OpenSSH ssh-agent
+  DPAPI-cached). PR squash-merges are signed by GitHub's `web-flow` key.
+  Pre-`8280409` back-catalog commits (256 total) remain Unverified —
+  accepted rather than re-signed via filter-branch.
+
+### Dependency bumps (Dependabot)
+
+- `bunit` 2.6.2 → 2.7.2 (PR #3)
+- `Microsoft.AspNetCore.Identity.EntityFrameworkCore` 9.0.3 → 9.0.16
+  (multi-package family bump, PR #5)
+- `Microsoft.AspNetCore.Mvc.Testing` 9.0.3 → 9.0.16 (PR #6)
+- `coverlet.collector` 6.0.2 → 10.0.1 (PR #4)
+- `actions/upload-artifact` 4.6.2 → 7.0.1 (PR #2; v6+ runs on Node 24)
+- `Microsoft.AspNetCore.SignalR.Client` 9.0.3 → 9.0.16 (PR #9)
+- `Microsoft.EntityFrameworkCore.InMemory` 9.0.3 → 9.0.16 (PR #11)
+- `Microsoft.EntityFrameworkCore.Sqlite` 9.0.3 → 9.0.16 (PR #12)
+- `Microsoft.EntityFrameworkCore.Design` 9.0.3 → 9.0.16 (PR #10)
+- `Microsoft.NET.Test.Sdk` 17.12.0 → 18.5.1 (PR #13)
+- **Held:** `Microsoft.AspNetCore.SignalR.Client` 9 → 10 (PR #7 closed
+  — requires .NET 10 TargetFramework upgrade, deferred). Followup
+  `ignore` rule in `dependabot.yml` prevents this PR from re-opening.
+
 ### Changed
 - Project renamed to `oao` everywhere (folders, csproj, sln, namespaces,
   config section, cookie name, DP app name + cert CN, TOTP issuer,
@@ -27,6 +117,10 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 - TOTP issuer is now "Open Audio Orchestrator" (was `OpenAudioOrchestrator`);
   existing authenticator entries continue to authenticate (the shared
   secret is unchanged) but display the old label.
+- **`Program.cs:66`** — DP keys path now reads from `oao:DpKeysPath`
+  config first, defaulting to existing `ContentRootPath/.dp-keys`
+  behavior. Production unchanged; integration tests use the config knob
+  to isolate per-`WebApplicationFactory` instance.
 
 ### Removed
 - Setup wizard's `dotnet run --project src/...` instruction snippet on the
@@ -37,6 +131,12 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 - Auth integration tests are now deterministic — `RateLimiter` is
   neutralized inside `CustomWebApplicationFactory`. The 3 pre-existing
   rate-limit-induced flaky failures are eliminated.
+- **Integration-test DP keys parallel-write race** —
+  `CustomWebApplicationFactory` now injects a per-instance
+  `oao:DpKeysPath` under `_testDataRoot`. Eliminates intermittent
+  `IOException: ... dp-key-protection.pfx ... being used by another
+  process` that surfaced on CI 2026-05-19 (PR #15). Local verification:
+  4 consecutive `dotnet test` runs, 210/210 each (PR #16, `6e26832`).
 
 ---
 
