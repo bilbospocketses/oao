@@ -188,6 +188,26 @@ signing layers that the audit didn't cover.
   `FuzzingID` no fuzzing setup). Findings sit in Security →
   Code scanning alerts alongside CodeQL; they do not fail the
   check (which gates workflow completion, not finding count).
+- **Phase G follow-up #2 — `strict_required_status_checks_policy`
+  flipped to `true`** — branch ruleset `16570488` PUT-patched
+  again (was `false` per the original Phase C non-strict-policy
+  decision). The only solo-actionable BranchProtectionID
+  Scorecard concern out of the 5 BranchProtection knobs; the
+  other 4 (stale review dismissal, required approvers, last push
+  approval, codeowners review) are either N/A for solo or would
+  deadlock self-merge via GitHub's no-self-approval rule. PRs
+  now must be on top of master at merge time; if master moves,
+  the branch needs a rebase (CI reruns against the new head).
+  Dependabot PRs already handled this via `@dependabot rebase`
+  in earlier Phase B follow-up triage, so the operational impact
+  is bounded.
+- **Phase G follow-up #3 — `.github/CODEOWNERS`** — `* @bilbospocketses`
+  as universal owner. Provides an explicit ownership signal for
+  any future contributor PR scenarios. `require_code_owner_review`
+  is **not** enabled on the master ruleset — the only owner can't
+  self-approve solo PRs (GitHub blocks self-approval), and enabling
+  the requirement would deadlock all merges. CODEOWNERS is
+  informational + future-proofing only.
 
 ### Dependency bumps (Dependabot)
 
