@@ -1,0 +1,32 @@
+# Dependabot version updates for oao.
+#
+# Security updates are handled separately by Dependabot security alerts
+# (enabled via repo Settings -> Code security and analysis). This file
+# covers routine non-security version bumps.
+#
+# Two ecosystems wired:
+#   - nuget: covers the .NET 9 dep graph (ASP.NET Core, EF Core,
+#     Microsoft.Identity, SignalR, YARP, Docker.DotNet, BouncyCastle,
+#     xUnit, bunit, Moq, etc.) across oao.Web.csproj and oao.Tests.csproj.
+#     Dependabot auto-discovers all csproj files under the root.
+#   - github-actions: maintains the SHA-pinned action refs in
+#     .github/workflows/ci.yml (and future release.yml when Velopack
+#     ships per TODO 4). Upstream actions tag new versions periodically;
+#     without this, Dependabot would never bump our pins and we'd drift
+#     on security fixes shipped in the actions themselves.
+#
+# Weekly cadence keeps PR noise manageable for a solo-owned repo.
+
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

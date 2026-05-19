@@ -1,0 +1,56 @@
+# CI: build + test on every push to master and every PR targeting master.
+#
+# This workflow enables the `required_status_checks` rule that Phase C of
+# TODO 7 (Repo security hardening) will add to the master branch ruleset
+# (rule will reference the `build-and-test` job context). Without this
+# workflow existing and reporting status, the rule would block ALL pushes
+# to master because the required check would never report.
+#
+# All actions are pinned to commit SHAs (per the upcoming ruleset's
+# implicit expectation — matches control-menu / ws-scrcpy-web parity).
+# Trailing `# v<x>` comments preserve human-readable version context.
+# Dependabot (`.github/dependabot.yml`, `package-ecosystem: github-actions`)
+# PRs SHA bumps as upstream actions tag new versions.
+#
+# Runs on windows-latest only — matches CM's pattern, matches oao's
+# Windows-first deploy story. TODO 1 (Linux validation on real
+# hardware/VM) covers the cross-platform validation work; CI-side Linux
+# coverage can be added as a follow-up Phase B.x once that work
+# establishes which tests are Linux-safe.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        with:
+          dotnet-version: 9.x
+
+      - name: Restore
+        run: dotnet restore oao.sln
+
+      - name: Build
+        run: dotnet build oao.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test oao.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-results
+          path: '**/test-results.trx'
