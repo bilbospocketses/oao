@@ -15,7 +15,7 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
   top-level config-section key — all of which invalidate prior local
   state.
 
-### Security (repo + supply-chain hardening, 2026-05-18 → 2026-05-19)
+### Security (repo + supply-chain hardening, 2026-05-18 → 2026-05-27)
 
 Full lockdown of the GitHub-side surface to control-menu parity. The
 in-code security posture (29/30 audit findings, custom ACME v2,
@@ -208,6 +208,19 @@ signing layers that the audit didn't cover.
   self-approve solo PRs (GitHub blocks self-approval), and enabling
   the requirement would deadlock all merges. CODEOWNERS is
   informational + future-proofing only.
+- **Dependabot auto-merge workflow (2026-05-27, PR #30)** — adds
+  `.github/workflows/dependabot-auto-merge.yml`. On `pull_request`, if
+  the actor is `dependabot[bot]` and the update type is
+  `version-update:semver-patch` or `semver-minor`, the job runs
+  `gh pr merge --auto --squash` — `--auto` defers the merge until the
+  required status checks pass, `--squash` preserves the `web-flow`
+  signing invariant. Major bumps are left for manual review (framework
+  / breaking-change upgrades). Metadata read via SHA-pinned
+  `dependabot/fetch-metadata@25dd0e34 # v3.1.0` (allowlisted in
+  `patterns_allowed`); job `permissions: contents: write +
+  pull-requests: write`. Completes the auto-merge path Phase B deferred
+  until the Phase C ruleset existed (`--auto` requires a protected
+  branch with required status checks).
 
 ### Dependency bumps (Dependabot)
 
