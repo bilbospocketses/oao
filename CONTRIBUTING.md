@@ -5,9 +5,9 @@ development environment running, the testing bar, and how to land changes.
 
 ## Prerequisites
 
-- **.NET 9 SDK** — install from [dotnet.microsoft.com](https://dotnet.microsoft.com/download).
-  The .NET 10 SDK also works (the projects target `net9.0` and run cleanly
-  against the in-box .NET 9 runtime shipped with the .NET 10 SDK).
+- **.NET 10 SDK** — install from [dotnet.microsoft.com](https://dotnet.microsoft.com/download).
+  The projects target `net10.0`, so the .NET 10 SDK is required; the .NET 9
+  SDK cannot build them.
 - **Docker Desktop** (Windows) or **Docker Engine** (Linux) — required at
   runtime. The app manages Fish Speech containers via the Docker SDK; the
   daemon must be reachable on the OS-default endpoint. The first run will
@@ -68,7 +68,7 @@ land via pull request:
    per GitHub's docs and `git config --global commit.gpgsign true`.
 3. **Push** your branch to `personal` / `origin`.
 4. **Open a pull request** against `master`.
-5. **Wait for CI** — the `build-and-test` job (windows-latest, dotnet 9.x)
+5. **Wait for CI** — the `build-and-test` job (windows-latest, dotnet 10.x)
    plus the `Analyze (csharp)` and `Analyze (actions)` CodeQL jobs must
    all go green before the PR is mergeable. Any new CodeQL alert
    introduced by the PR blocks merge until fixed or dismissed.

@@ -23,7 +23,7 @@ Open Audio Orchestrator runs locally on Windows or Linux and manages [Fish Speec
 - **Real-time dashboard** — live container status, GPU memory/core utilization (5-second refresh), and latest model output
 - **Container log streaming** — live Docker log viewer with backfill, per-container subscription, newest-first ordering
 - **Generation history** — log of all TTS generations with playback, download, and delete; updates dynamically when jobs complete
-- **Authentication** — ASP.NET Identity with mandatory TOTP/MFA, cryptographic one-time sign-in tokens, rate-limited login (10 req/min per IP)
+- **Authentication** — ASP.NET Identity with mandatory TOTP/MFA, cryptographic one-time sign-in tokens, rate-limited auth endpoints (login + TOTP completion, 10 req/min per IP), and account lockout (15-minute lockout after 5 failed attempts)
 - **Role-based access control** — Admin (full access) and User (TTS, voice browsing, own history)
 - **Authenticated file serving** — audio output and reference files served through authorized endpoints with canonical path traversal protection
 - **Database encryption** — optional SQLCipher at-rest encryption configured during setup; encryption key protected by ASP.NET Data Protection API; database file permissions automatically restricted to the app user
@@ -39,7 +39,7 @@ Open Audio Orchestrator runs locally on Windows or Linux and manages [Fish Speec
 
 - NVIDIA GPU with CUDA drivers
 - Docker (Desktop on Windows, CE on Linux)
-- .NET 9 SDK
+- .NET 10 SDK
 - Git with Git LFS
 
 Platform-specific setup instructions:
@@ -51,7 +51,7 @@ Platform-specific setup instructions:
 ```bash
 git clone https://github.com/bilbospocketses/oao.git
 cd oao
-dotnet run --project src/oao.Web
+dotnet run --project src/oao.Web -c Release
 ```
 
 Navigate to `http://localhost:5206` and complete the 7-step setup wizard. After setup, restart the app and log in with your admin credentials. See the platform setup guides above for detailed instructions.
@@ -89,7 +89,7 @@ For automated deployments, set `oao__AdminUser` and `oao__AdminPassword` as envi
 
 ## Architecture
 
-- **Blazor Server** (.NET 9) — interactive server-side UI with light/dark theme toggle (per-user preference)
+- **Blazor Server** (.NET 10) — interactive server-side UI with light/dark theme toggle (per-user preference)
 - **SQLite** (EF Core) — model profiles, voice library, generation logs, TTS job queue, Identity tables; optional SQLCipher at-rest encryption
 - **Docker.DotNet** — container lifecycle management and exec API for TTS generation (no shell-out)
 - **docker exec (SDK)** — TTS generation runs inside the container via Docker SDK exec, writing output to mounted volume; survives app restarts
@@ -119,6 +119,9 @@ dotnet ef migrations add <MigrationName>
 
 - [ ] Create a containerized Docker version of the Blazor app (publish prebuilt image to Docker Hub)
   - [ ] Remove YARP reverse proxy from containerized app; provide general guidance on using a separate reverse proxy running externally in another Docker container
+- [ ] Windows installer (Velopack) — one-click install with automatic self-update against GitHub Releases, so non-developers can run OAO without cloning and building
+- [ ] Let's Encrypt certificate status indicator on Admin Settings — surface issued / pending / failed state and expiry, with actionable guidance when provisioning fails
+- [ ] Nonce/hash-based Content-Security-Policy — replace the Blazor Server `script-src 'unsafe-inline'` requirement (audit finding SEC-03) with a stricter nonce- or hash-based CSP
 
 ## Attribution
 

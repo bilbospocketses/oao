@@ -5,7 +5,7 @@
 # covers routine non-security version bumps.
 #
 # Two ecosystems wired:
-#   - nuget: covers the .NET 9 dep graph (ASP.NET Core, EF Core,
+#   - nuget: covers the .NET 10 dep graph (ASP.NET Core, EF Core,
 #     Microsoft.Identity, SignalR, YARP, Docker.DotNet, BouncyCastle,
 #     xUnit, bunit, Moq, etc.) across oao.Web.csproj and oao.Tests.csproj.
 #     Dependabot auto-discovers all csproj files under the root.

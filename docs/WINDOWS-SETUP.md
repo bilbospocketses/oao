@@ -4,7 +4,7 @@ This guide covers installing and running Open Audio Orchestrator on Windows. For
 
 ## Prerequisites
 
-You need: an NVIDIA GPU with CUDA drivers, Docker Desktop, .NET 9 SDK, and Git with Git LFS.
+You need: an NVIDIA GPU with CUDA drivers, Docker Desktop, .NET 10 SDK, and Git with Git LFS.
 
 ### 1. NVIDIA Drivers
 
@@ -23,15 +23,15 @@ docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
 
 The second command should show your GPU. If it fails, open Docker Desktop Settings > Docker Engine, and ensure the NVIDIA runtime is configured. You may also need to install the [NVIDIA Container Toolkit for WSL2](https://docs.nvidia.com/cuda/wsl-user-guide/index.html).
 
-### 3. .NET 9 SDK
+### 3. .NET 10 SDK
 
 Install via winget:
 
 ```powershell
-winget install Microsoft.DotNet.SDK.9
+winget install Microsoft.DotNet.SDK.10
 ```
 
-Or download from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/9.0).
+Or download from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ### 4. Git + Git LFS
 
@@ -47,7 +47,7 @@ Or download from [git-scm.com](https://git-scm.com/) and [git-lfs.com](https://g
 ```powershell
 git clone https://github.com/bilbospocketses/oao.git
 cd oao
-dotnet run --project src/oao.Web
+dotnet run --project src/oao.Web -c Release
 ```
 
 Navigate to `http://localhost:5206` and complete the setup wizard. The wizard detects your platform and shows Windows-appropriate defaults.
@@ -60,7 +60,7 @@ The 7-step setup wizard guides you through:
 2. **Model Download** — download the Fish Audio s2-pro model (~11 GB) from HuggingFace, or skip to download later
 3. **Docker Image** — download the Fish Speech Docker image (~5 GB)
 4. **Server Configuration** — database encryption key, container port range, optional domain + automatic HTTPS via Let's Encrypt
-5. **Admin Account** — create your administrator username and password
+5. **Admin Account** — create your administrator username, display name, and password
 6. **TOTP Setup** — scan QR code with your authenticator app
 7. **Complete** — review settings and restart instructions
 
