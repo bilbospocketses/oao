@@ -8,6 +8,26 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 
 ## [Unreleased]
 
+### Fixed (2026-06-04 — net10 CI follow-up)
+- **Data-Protection certificate provisioning is now race-safe.**
+  `Program.ConfigurePlatformKeyProtection` writes `dp-key-protection.pfx`
+  atomically (unique temp file + `File.Move`) and retries transient
+  IO/crypto errors, tolerating a concurrent writer by loading the winner's
+  file. Eliminates the intermittent `File.WriteAllBytes` failure that
+  surfaced under net10 parallel integration tests — each
+  `WebApplicationFactory` writes its own cert, and an AV/Defender scan of a
+  freshly written `.pfx` under load could briefly lock it. Production builds
+  this once per process and is unaffected. (Caught hanging Dependabot PRs
+  #34/#35.)
+- **Master branch-protection ruleset corrected to unblock Dependabot.**
+  Required status checks swapped the two CodeQL per-language contexts
+  (`Analyze (csharp)`, `Analyze (actions)`) — which CodeQL default-setup does
+  not emit on Dependabot PRs — for the aggregate `CodeQL` check (GHAS app
+  57789). Dependabot PRs were sitting permanently `BLOCKED` despite green
+  checks; mirrors the control-menu fix. API-only change to ruleset
+  `16570488`; `strict_required_status_checks_policy` and all other rules
+  preserved.
+
 ### Breaking changes
 - Existing installs cannot upgrade in place. Delete any previous local
   DB + clear browser cookies, then re-run Setup. The rename changes the
