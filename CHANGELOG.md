@@ -240,6 +240,21 @@ signing layers that the audit didn't cover.
   `ignore` rule in `dependabot.yml` prevents this PR from re-opening.
 
 ### Changed
+- **Upgraded target framework `net9.0` → `net10.0`.** Both `oao.Web` and
+  `oao.Tests` retargeted; framework-aligned packages (`Microsoft.AspNetCore.*`,
+  `Microsoft.EntityFrameworkCore.*`, `Microsoft.AspNetCore.SignalR.Client`)
+  bumped `9.0.16` → `10.0.8`. Independent test packages (bunit, xUnit,
+  coverlet, Moq, Test.Sdk) unchanged. Clean build (0 warnings) and full test
+  suite green (210/210) on net10. The .NET 10 SDK is now required to build;
+  README/CONTRIBUTING prerequisites, the Windows/Linux setup guides, and CI
+  (`setup-dotnet` → `dotnet-version: 10.x`) updated to match. Brings oao to
+  parity with control-menu's net10 baseline.
+- Documentation accuracy pass: README + SECURITY now document account
+  lockout (15-minute lockout after 5 failed attempts); README's rate-limit
+  note covers login + TOTP completion; the setup wizard's Admin Account step
+  (both setup guides) lists the Display Name field; the README To Do roadmap
+  expanded (Docker Hub image, Velopack installer, Let's Encrypt cert-status
+  indicator, CSP nonce/hash hardening); Quick Start aligned to `-c Release`.
 - Project renamed to `oao` everywhere (folders, csproj, sln, namespaces,
   config section, cookie name, DP app name + cert CN, TOTP issuer,
   default paths, DB filename).
@@ -262,6 +277,12 @@ signing layers that the audit didn't cover.
   terminal context.
 
 ### Fixed
+- Deploy page's FP16 (`--half`) recommendation now reads "≤20 GB VRAM"
+  (was "≤12 GB"), matching the threshold documented in `README.md`.
+- Corrected `docs/audit-report.md`: the summary table undercounted Medium
+  findings (10 → 14; total 26 → 30, now consistent with the 29/30 cited in
+  `SECURITY.md`); every finding is tagged ✅ Resolved / ⏳ Deferred and the
+  stale "remaining critical issues" summary was refreshed to current state.
 - Auth integration tests are now deterministic — `RateLimiter` is
   neutralized inside `CustomWebApplicationFactory`. The 3 pre-existing
   rate-limit-induced flaky failures are eliminated.

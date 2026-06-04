@@ -4,7 +4,7 @@ This guide covers installing and running Open Audio Orchestrator on Linux. For W
 
 ## Prerequisites
 
-You need: an NVIDIA GPU with CUDA drivers, Docker with NVIDIA Container Toolkit, .NET 9 SDK, and Git with Git LFS. Tested on RTX 3060 12 GB.
+You need: an NVIDIA GPU with CUDA drivers, Docker with NVIDIA Container Toolkit, .NET 10 SDK, and Git with Git LFS. Tested on RTX 3060 12 GB.
 
 ### Debian / Ubuntu
 
@@ -34,8 +34,8 @@ sudo systemctl enable --now docker
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-# .NET 9 SDK
-sudo apt install -y dotnet-sdk-9.0
+# .NET 10 SDK
+sudo apt install -y dotnet-sdk-10.0
 
 # Git + Git LFS
 sudo apt install -y git git-lfs
@@ -65,8 +65,8 @@ sudo systemctl enable --now docker
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
-# .NET 9 SDK
-sudo dnf install -y dotnet-sdk-9.0
+# .NET 10 SDK
+sudo dnf install -y dotnet-sdk-10.0
 
 # Git + Git LFS
 sudo dnf install -y git git-lfs
@@ -75,7 +75,7 @@ git lfs install
 
 ### Alpine
 
-> **Note:** Alpine uses musl libc and OpenRC (not systemd). .NET 9 has official Alpine support. NVIDIA driver installation on Alpine is more involved — refer to [NVIDIA's documentation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) for your setup.
+> **Note:** Alpine uses musl libc and OpenRC (not systemd). .NET 10 has official Alpine support. NVIDIA driver installation on Alpine is more involved — refer to [NVIDIA's documentation](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) for your setup.
 
 ```bash
 # Docker
@@ -83,8 +83,8 @@ sudo apk add docker
 sudo rc-update add docker default
 sudo service docker start
 
-# .NET 9 SDK
-sudo apk add dotnet9-sdk
+# .NET 10 SDK
+sudo apk add dotnet10-sdk
 
 # Git + Git LFS
 sudo apk add git git-lfs
@@ -106,7 +106,7 @@ You should see your GPU listed. If this fails, check that the NVIDIA Container T
 ```bash
 git clone https://github.com/bilbospocketses/oao.git
 cd oao
-dotnet run --project src/oao.Web
+dotnet run --project src/oao.Web -c Release
 ```
 
 Navigate to `http://localhost:5206` and complete the setup wizard. The wizard detects your platform and shows Linux-appropriate defaults.
@@ -119,7 +119,7 @@ The 7-step setup wizard guides you through:
 2. **Model Download** — download the Fish Audio s2-pro model (~11 GB) from HuggingFace, or skip to download later
 3. **Docker Image** — download the Fish Speech Docker image (~5 GB)
 4. **Server Configuration** — database encryption key, container port range, optional domain + automatic HTTPS via Let's Encrypt
-5. **Admin Account** — create your administrator username and password
+5. **Admin Account** — create your administrator username, display name, and password
 6. **TOTP Setup** — scan QR code with your authenticator app
 7. **Complete** — review settings and restart instructions
 
@@ -191,7 +191,7 @@ Navigate to `http://your-server:5206` and complete the setup wizard.
 
 - Alpine uses **OpenRC**, not systemd. Adapt the service configuration to use OpenRC init scripts, `s6`, or `supervise`.
 - NVIDIA driver installation on Alpine differs from Debian/RHEL. Consult the [NVIDIA Container Toolkit docs](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
-- .NET 9 is officially supported on Alpine (musl). No compatibility issues expected.
+- .NET 10 is officially supported on Alpine (musl). No compatibility issues expected.
 
 ## Troubleshooting
 

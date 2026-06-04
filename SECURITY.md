@@ -71,7 +71,7 @@ The codebase has been through a comprehensive security audit (29/30
 findings shipped — `docs/audit-report.md`) covering session fixation,
 TOTP/MFA, antiforgery tokens, CSP headers (with one accepted
 constraint — Blazor Server's `script-src 'unsafe-inline'` requirement,
-tracked for follow-up), rate limiting, audio-file authorization, path
+tracked for follow-up), rate limiting, account lockout (5 failed attempts → 15-minute lockout), audio-file authorization, path
 traversal prevention, and authenticated-only access to sensitive
 endpoints. The Let's Encrypt integration uses an in-house ACME v2 client
 (not the unmaintained LettuceEncrypt / Certes libraries).
