@@ -255,22 +255,55 @@ public partial class Program
     internal static void ConfigurePlatformKeyProtection(IDataProtectionBuilder dpBuilder, string dpKeysPath)
     {
         var certPath = Path.Combine(dpKeysPath, "dp-key-protection.pfx");
-        X509Certificate2 cert;
-        if (File.Exists(certPath))
+        dpBuilder.ProtectKeysWithCertificate(LoadOrCreateProtectionCert(certPath));
+    }
+
+    // Loads the Data-Protection certificate, creating it on first run. Resilient to
+    // transient IO contention: parallel integration-test hosts (one WebApplicationFactory
+    // each) and AV/Defender scanners can briefly lock a freshly written `.pfx`, which made
+    // CI intermittently fail on `File.WriteAllBytes`. Production builds this once per process.
+    private static X509Certificate2 LoadOrCreateProtectionCert(string certPath)
+    {
+        const int maxAttempts = 8;
+        for (var attempt = 1; ; attempt++)
         {
-            cert = X509CertificateLoader.LoadPkcs12FromFile(certPath, null);
+            try
+            {
+                if (File.Exists(certPath))
+                    return X509CertificateLoader.LoadPkcs12FromFile(certPath, null);
+
+                using var rsa = RSA.Create(2048);
+                var req = new CertificateRequest(
+                    "CN=oao-DataProtection",
+                    rsa,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+                using var created = req.CreateSelfSigned(
+                    DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(10));
+
+                // Atomic publish: write a uniquely-named temp file then move it into place,
+                // so a concurrent reader never sees a half-written `.pfx`. A losing racer's
+                // Move throws (the target already exists); the next pass loads the winner's file.
+                var tmp = certPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                File.WriteAllBytes(tmp, created.Export(X509ContentType.Pfx));
+                try
+                {
+                    File.Move(tmp, certPath);
+                }
+                catch
+                {
+                    try { File.Delete(tmp); } catch { /* best effort */ }
+                    throw;
+                }
+
+                return X509CertificateLoader.LoadPkcs12FromFile(certPath, null);
+            }
+            catch (Exception ex) when (
+                attempt < maxAttempts &&
+                ex is IOException or UnauthorizedAccessException or CryptographicException)
+            {
+                System.Threading.Thread.Sleep(40 * attempt);
+            }
         }
-        else
-        {
-            using var rsa = RSA.Create(2048);
-            var req = new CertificateRequest(
-                "CN=oao-DataProtection",
-                rsa,
-                HashAlgorithmName.SHA256,
-                RSASignaturePadding.Pkcs1);
-            cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(10));
-            File.WriteAllBytes(certPath, cert.Export(X509ContentType.Pfx));
-        }
-        dpBuilder.ProtectKeysWithCertificate(cert);
     }
 }
