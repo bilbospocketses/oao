@@ -35,6 +35,18 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "Microsoft.EntityFrameworkCore.*"
         update-types: ["version-update:semver-major"]
+    # Batch all minor + patch bumps into ONE weekly PR. With Central Package
+    # Management (Directory.Packages.props) a shared package has ONE version for
+    # the whole solution, so a grouped bump updates every project atomically --
+    # no more per-project drift / NU1605 package-downgrade. Majors still open
+    # individually for review.
+    groups:
+      nuget-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: github-actions
     directory: /
