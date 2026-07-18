@@ -11,6 +11,9 @@
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Let a <PackageVersion> below pin a TRANSITIVE dependency (used for the
+         security overrides at the end of the ItemGroup). -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +33,16 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+
+    <!-- Security overrides: transitively pinned to force a patched version of a
+         package we don't reference directly. Revisit / remove when the parent
+         package ships a fix and Dependabot can bump it normally.
+         - AngleSharp (via bunit): GHSA-pgww-w46g-26qg (mXSS), patched in 1.5.0.
+         - SQLitePCLRaw.lib.e_sqlite3 (via EF Core Sqlite): CVE-2025-6965 /
+           GHSA-2m69-gcr7-jv3q, fixed by SQLite 3.50.2+; 2.1.11 is the last
+           vulnerable build, 2.1.12 is out of the affected range. -->
+    <PackageVersion Include="AngleSharp" Version="1.5.2" />
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
   </ItemGroup>
 
 </Project>
