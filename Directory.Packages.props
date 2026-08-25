@@ -31,7 +31,7 @@
     <PackageVersion Include="QRCoder" Version="1.8.0" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
     <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
 
     <!-- Security overrides: transitively pinned to force a patched version of a
