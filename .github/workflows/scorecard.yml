@@ -90,6 +90,6 @@ jobs:
         # PRECISE v4.35.5 per feedback_dependabot_precise_version_comment.md
         # — bare `# v4` would be a Dependabot blind spot for future major
         # bumps (v5+).
-        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           sarif_file: results.sarif
