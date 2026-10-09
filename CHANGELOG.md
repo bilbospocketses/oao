@@ -260,6 +260,10 @@ signing layers that the audit didn't cover.
   `ignore` rule in `dependabot.yml` prevents this PR from re-opening.
 
 ### Changed
+- **CI now enforces American spelling.** The `build-and-test` job runs the
+  gate from `bilbospocketses/american-spelling` (pinned to v1.0.2 by commit
+  SHA), which fails a PR whose added lines or commit messages use a British
+  spelling. A verbatim quote is exempted inline with `spelling: allow`.
 - **Upgraded target framework `net9.0` → `net10.0`.** Both `oao.Web` and
   `oao.Tests` retargeted; framework-aligned packages (`Microsoft.AspNetCore.*`,
   `Microsoft.EntityFrameworkCore.*`, `Microsoft.AspNetCore.SignalR.Client`)
