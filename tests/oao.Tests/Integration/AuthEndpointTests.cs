@@ -1,6 +1,7 @@
 using System.Net;
 using oao.Web.Data;
 using oao.Web.Data.Entities;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,10 @@ namespace oao.Tests.Integration;
 public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAsyncLifetime
 {
     private readonly CustomWebApplicationFactory _factory;
+
+    // The tests below seed totp-verified tokens with no expiry: the endpoint removes
+    // a token when it is used, so a slow box can never expire one mid-test. The
+    // product's own 60 s TTL (LoginTotp.razor) is not under test here.
 
     public AuthEndpointTests(CustomWebApplicationFactory factory)
     {
@@ -148,7 +153,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "test-valid-token-12345";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -170,7 +175,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "one-time-use-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id);
 
         var client = _factory.CreateNonRedirectClient();
 
@@ -196,7 +201,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "redirect-test-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -219,7 +224,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "double-slash-test-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -242,7 +247,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "local-redirect-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -275,9 +280,22 @@ public class AuthLockoutTests : IAsyncLifetime
 {
     private CustomWebApplicationFactory _factory = null!;
 
+    // The lockout's length is not under test, only that it happens. A 10-year
+    // lockout means no stall between the 5th and 6th attempt can outlast it.
+    private sealed class LongLockoutFactory : CustomWebApplicationFactory
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureServices(services =>
+                services.Configure<IdentityOptions>(o =>
+                    o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromDays(3650)));
+        }
+    }
+
     public async Task InitializeAsync()
     {
-        _factory = new CustomWebApplicationFactory();
+        _factory = new LongLockoutFactory();
         await _factory.SeedTestDataAsync();
     }
 

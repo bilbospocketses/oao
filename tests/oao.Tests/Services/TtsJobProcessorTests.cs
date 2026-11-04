@@ -105,6 +105,46 @@ public class TtsJobProcessorTests : IDisposable
         };
     }
 
+    // A hang guard only: a healthy run reaches its event in well under a second.
+    private static readonly TimeSpan HangGuard = TimeSpan.FromSeconds(120);
+
+    private static TaskCompletionSource NewSignal() =>
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// Runs the processor until <paramref name="reached"/> completes, then stops it.
+    /// The processor's stopping token is never canceled early, so a slow box only
+    /// makes the test slower; it never cuts recovery or a job short. The stop waits
+    /// for ExecuteAsync to finish, so every save after the event lands before the
+    /// caller's asserts. Both waits are hang-guarded, so a stuck processor fails as
+    /// HUNG instead of hanging the run. The event handler that completes
+    /// <paramref name="reached"/> must capture a test local used after this call:
+    /// the event bus holds handlers by weak reference, and that keeps the closure alive.
+    /// </summary>
+    private static async Task RunUntilAsync(TtsJobProcessor processor, Task reached, string what)
+    {
+        await processor.StartAsync(CancellationToken.None);
+
+        Task? first = null;
+        try { first = await Task.WhenAny(reached, processor.ExecuteTask!).WaitAsync(HangGuard); }
+        catch (TimeoutException) { }
+
+        var stopped = true;
+        try { await processor.StopAsync(CancellationToken.None).WaitAsync(HangGuard); }
+        catch (TimeoutException) { stopped = false; }
+
+        if (first is null)
+            Assert.Fail($"HUNG: waited {HangGuard.TotalSeconds} s for {what}"
+                + (stopped ? "" : ", and the processor then did not stop"));
+        if (!stopped)
+            Assert.Fail($"HUNG: waited {HangGuard.TotalSeconds} s for the processor to stop after {what}");
+        if (first != reached)
+        {
+            await processor.ExecuteTask!; // rethrows a fault
+            Assert.Fail($"The processor stopped before {what}");
+        }
+    }
+
     // -------------------------------------------------------------------
     // RecoverInterruptedJobs tests
     // -------------------------------------------------------------------
@@ -130,17 +170,19 @@ public class TtsJobProcessorTests : IDisposable
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         TtsJobStatusEvent? receivedEvent = null;
         TtsNotificationEvent? receivedNotification = null;
+        var promoted = NewSignal();
         eventBus.OnTtsJobStatus += evt => receivedEvent = evt;
-        eventBus.OnTtsNotification += evt => receivedNotification = evt;
+        eventBus.OnTtsNotification += evt =>
+        {
+            receivedNotification = evt;
+            promoted.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act — ExecuteAsync calls RecoverInterruptedJobsAsync, then loops.
-        // We use a short-lived CancellationToken so it stops after recovery.
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(600); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        // The notification is the last thing promotion raises.
+        await RunUntilAsync(processor, promoted.Task, "the completion notification");
 
         // Assert — job should be promoted to GenerationLog and removed from TtsJobs
         Assert.False(await context.TtsJobs.AnyAsync(j => j.Id == job.Id));
@@ -192,15 +234,17 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         var statusEvents = new List<TtsJobStatusEvent>();
-        eventBus.OnTtsJobStatus += evt => statusEvents.Add(evt);
+        var failed = NewSignal();
+        eventBus.OnTtsJobStatus += evt =>
+        {
+            statusEvents.Add(evt);
+            if (evt.Status == "Failed" && evt.JobId == job.Id) failed.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, failed.Task, $"job {job.Id} to fail");
 
         // Assert — job was NOT promoted to GenerationLog (key: it was re-queued, not completed)
         Assert.False(await context.GenerationLogs.AnyAsync());
@@ -241,15 +285,17 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         var statusEvents = new List<TtsJobStatusEvent>();
-        eventBus.OnTtsJobStatus += evt => statusEvents.Add(evt);
+        var failed = NewSignal();
+        eventBus.OnTtsJobStatus += evt =>
+        {
+            statusEvents.Add(evt);
+            if (evt.Status == "Failed" && evt.JobId == job.Id) failed.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, failed.Task, $"job {job.Id} to fail");
 
         // Assert — job should NOT be promoted to GenerationLog
         Assert.False(await context.GenerationLogs.AnyAsync());
@@ -285,13 +331,19 @@ public class TtsJobProcessorTests : IDisposable
         var filePath = Path.Combine(_outputPath, "recovery-target.wav");
         await File.WriteAllBytesAsync(filePath, new byte[2000]);
 
-        var processor = CreateProcessor(context);
+        // Recovery runs before the job loop, so the queued job's "Processing"
+        // event means recovery is over.
+        var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
+        var queuedPicked = NewSignal();
+        eventBus.OnTtsJobStatus += evt =>
+        {
+            if (evt.Status == "Processing" && evt.JobId == queuedJob.Id) queuedPicked.TrySetResult();
+        };
+
+        var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(600); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, queuedPicked.Task, $"queued job {queuedJob.Id} to be picked up");
 
         // Assert — only the Processing job was promoted
         Assert.False(await context.TtsJobs.AnyAsync(j => j.Id == processingJob.Id));
@@ -330,15 +382,17 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         var receivedEvents = new List<TtsJobStatusEvent>();
-        eventBus.OnTtsJobStatus += evt => receivedEvents.Add(evt);
+        var failed = NewSignal();
+        eventBus.OnTtsJobStatus += evt =>
+        {
+            receivedEvents.Add(evt);
+            if (evt.Status == "Failed" && evt.JobId == job.Id) failed.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
-        // Act — let it run long enough for one ProcessNextJobAsync cycle
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        // Act — run until one ProcessNextJobAsync cycle has failed the job
+        await RunUntilAsync(processor, failed.Task, $"job {job.Id} to fail");
 
         // Assert
         var failedJob = await context.TtsJobs.FirstAsync(j => j.Id == job.Id);
@@ -379,19 +433,20 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         var processingJobIds = new List<int>();
+        var picked = NewSignal();
         eventBus.OnTtsJobStatus += evt =>
         {
             if (evt.Status == "Processing")
+            {
                 processingJobIds.Add(evt.JobId);
+                picked.TrySetResult();
+            }
         };
 
         var processor = CreateProcessor(context, eventBus);
 
-        // Act — let it process at least one job
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        // Act — run until the first job is picked up
+        await RunUntilAsync(processor, picked.Task, "the first job to be picked up");
 
         // Assert — older job should have been picked first
         Assert.NotEmpty(processingJobIds);
@@ -420,15 +475,17 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         var receivedEvents = new List<TtsJobStatusEvent>();
-        eventBus.OnTtsJobStatus += evt => receivedEvents.Add(evt);
+        var picked = NewSignal();
+        eventBus.OnTtsJobStatus += evt =>
+        {
+            receivedEvents.Add(evt);
+            if (evt.Status == "Processing" && evt.JobId == job.Id) picked.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, picked.Task, $"job {job.Id} to be picked up");
 
         // Assert — the first event should be "Processing"
         Assert.Contains(receivedEvents, e => e.Status == "Processing" && e.JobId == job.Id);
@@ -571,19 +628,20 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         var failedEvents = new List<TtsJobStatusEvent>();
+        var failed = NewSignal();
         eventBus.OnTtsJobStatus += evt =>
         {
             if (evt.Status == "Failed")
+            {
                 failedEvents.Add(evt);
+                if (evt.JobId == job.Id) failed.TrySetResult();
+            }
         };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, failed.Task, $"job {job.Id} to fail");
 
         // Assert
         var failedJob = await context.TtsJobs.FirstAsync(j => j.Id == job.Id);
@@ -627,16 +685,18 @@ public class TtsJobProcessorTests : IDisposable
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         TtsJobStatusEvent? statusEvent = null;
         TtsNotificationEvent? notificationEvent = null;
+        var promoted = NewSignal();
         eventBus.OnTtsJobStatus += evt => statusEvent = evt;
-        eventBus.OnTtsNotification += evt => notificationEvent = evt;
+        eventBus.OnTtsNotification += evt =>
+        {
+            notificationEvent = evt;
+            promoted.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(600); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, promoted.Task, "the completion notification");
 
         // Assert — TtsJob removed
         Assert.False(await context.TtsJobs.AnyAsync(j => j.Id == originalJobId));
@@ -690,15 +750,17 @@ public class TtsJobProcessorTests : IDisposable
 
         var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
         TtsNotificationEvent? notification = null;
-        eventBus.OnTtsNotification += evt => notification = evt;
+        var promoted = NewSignal();
+        eventBus.OnTtsNotification += evt =>
+        {
+            notification = evt;
+            promoted.TrySetResult();
+        };
 
         var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(600); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, promoted.Task, "the completion notification");
 
         // Assert — notification text should be truncated to 50 chars + "..."
         Assert.NotNull(notification);
@@ -742,13 +804,17 @@ public class TtsJobProcessorTests : IDisposable
         var completedFilePath = Path.Combine(_outputPath, "multi-completed.wav");
         await File.WriteAllBytesAsync(completedFilePath, new byte[3000]);
 
-        var processor = CreateProcessor(context);
+        var eventBus = new OrchestratorEventBus(NullLogger<OrchestratorEventBus>.Instance);
+        var stuckFailed = NewSignal();
+        eventBus.OnTtsJobStatus += evt =>
+        {
+            if (evt.Status == "Failed" && evt.JobId == stuckJob.Id) stuckFailed.TrySetResult();
+        };
+
+        var processor = CreateProcessor(context, eventBus);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        try { await processor.StartAsync(cts.Token); await Task.Delay(3100); }
-        catch (OperationCanceledException) { }
-        finally { await processor.StopAsync(CancellationToken.None); }
+        await RunUntilAsync(processor, stuckFailed.Task, $"stuck job {stuckJob.Id} to fail");
 
         // Assert
         // Completed job should be promoted (removed from TtsJobs, added to GenerationLogs)
