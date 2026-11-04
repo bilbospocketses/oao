@@ -47,6 +47,8 @@ public class TotpServiceTests
     }
 
     // Compute TOTP code from a base32 key (matches ASP.NET Identity's Rfc6238 implementation)
+    private static long CurrentTotpStep() => DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30;
+
     private static string ComputeTotp(string base32Key)
     {
         // Base32 decode
@@ -65,9 +67,7 @@ public class TotpServiceTests
         var keyBytes = bytes.ToArray();
 
         // TOTP: 30-second window, 6 digits, HMAC-SHA1
-        // Not a timed test: Identity verifies against its own clock with a +-2-step
-        // window (its functional timer), and it exposes no TimeProvider to inject.
-        var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30;
+        var counter = CurrentTotpStep();
         var counterBytes = BitConverter.GetBytes(counter);
         if (BitConverter.IsLittleEndian) Array.Reverse(counterBytes);
 
@@ -100,10 +100,20 @@ public class TotpServiceTests
         var freshUser = await userMgr.FindByNameAsync("testuser");
         Assert.NotNull(freshUser);
 
-        // Generate a valid TOTP code from the key (same algorithm as authenticator apps)
-        var token = ComputeTotp(manualKey);
-
-        var result = await service.VerifyCodeAsync(freshUser, token);
+        // Generate a valid TOTP code from the key (same algorithm as authenticator apps).
+        // Identity checks it against its own clock, within +-2 steps, and offers no
+        // clock to inject. A stall that outran that window between computing the code
+        // and verifying it is retried, so a slow box cannot fail correct code.
+        bool result;
+        for (var attempt = 1; ; attempt++)
+        {
+            var before = CurrentTotpStep();
+            var token = ComputeTotp(manualKey);
+            result = await service.VerifyCodeAsync(freshUser, token);
+            if (CurrentTotpStep() - before <= 2) break;
+            if (attempt == 10)
+                Assert.Fail("HUNG: 10 attempts each stalled past Identity's +-2-step TOTP window");
+        }
         Assert.True(result);
     }
 

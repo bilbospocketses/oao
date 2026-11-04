@@ -16,15 +16,19 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
   test now runs the processor until the bus event that ends its scenario
   (the completion notification, the job's `Failed` or `Processing` status),
   with a 120 s guard that fails as `HUNG: ...` and names the event it waited
-  for. Proven both ways: a 4 s delay at the top of `ExecuteAsync` failed all
-  11 old tests and passes all 11 new ones, and six product mutations each
-  fail the tests that cover them.
-- `AuthEndpointTests` seeds its `totp-verified:` tokens with a 10-minute
-  test-setup TTL instead of 60 s, so a stalled run cannot expire one
-  mid-test. The product's own 60 s TTL is unchanged and not under test there.
-- `TotpServiceTests` carries a comment saying why it is not a timed test:
-  Identity verifies codes against its own clock with a ±2-step window and
-  offers no clock to inject.
+  for; stopping the processor is guarded the same way, so a stuck processor
+  fails as `HUNG` instead of hanging the run. Proven both ways: a 4 s delay at
+  the top of `ExecuteAsync` failed all 11 old tests and passes all 11 new
+  ones, and six product mutations each fail the tests that cover them.
+- `AuthEndpointTests` seeds its `totp-verified:` tokens with no expiry
+  instead of a 60 s TTL (the endpoint removes a token when it is used), so a
+  stalled run cannot expire one mid-test. The product's own 60 s TTL is
+  unchanged and not under test there.
+- `AuthLockoutTests` runs with a 10-year lockout instead of 15 minutes: the
+  test checks that lockout happens, not how long it lasts.
+- `TotpServiceTests.VerifyCode_ReturnsTrueForValidToken` retries when a stall
+  between computing the code and verifying it outran Identity's ±2-step
+  window. Identity reads its own clock and offers none to inject.
 
 ### Fixed (2026-06-04 — net10 CI follow-up)
 - **Data-Protection certificate provisioning is now race-safe.**

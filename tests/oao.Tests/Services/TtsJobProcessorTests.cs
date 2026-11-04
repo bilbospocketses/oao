@@ -114,31 +114,34 @@ public class TtsJobProcessorTests : IDisposable
     /// <summary>
     /// Runs the processor until <paramref name="reached"/> completes, then stops it.
     /// The processor's stopping token is never canceled early, so a slow box only
-    /// makes the test slower; it never cuts recovery or a job short. StopAsync waits
+    /// makes the test slower; it never cuts recovery or a job short. The stop waits
     /// for ExecuteAsync to finish, so every save after the event lands before the
-    /// caller's asserts. The event handler that completes <paramref name="reached"/>
-    /// must capture a test local used after this call: the event bus holds handlers
-    /// by weak reference, and that keeps the closure alive.
+    /// caller's asserts. Both waits are hang-guarded, so a stuck processor fails as
+    /// HUNG instead of hanging the run. The event handler that completes
+    /// <paramref name="reached"/> must capture a test local used after this call:
+    /// the event bus holds handlers by weak reference, and that keeps the closure alive.
     /// </summary>
     private static async Task RunUntilAsync(TtsJobProcessor processor, Task reached, string what)
     {
-        try
+        await processor.StartAsync(CancellationToken.None);
+
+        Task? first = null;
+        try { first = await Task.WhenAny(reached, processor.ExecuteTask!).WaitAsync(HangGuard); }
+        catch (TimeoutException) { }
+
+        var stopped = true;
+        try { await processor.StopAsync(CancellationToken.None).WaitAsync(HangGuard); }
+        catch (TimeoutException) { stopped = false; }
+
+        if (first is null)
+            Assert.Fail($"HUNG: waited {HangGuard.TotalSeconds} s for {what}"
+                + (stopped ? "" : ", and the processor then did not stop"));
+        if (!stopped)
+            Assert.Fail($"HUNG: waited {HangGuard.TotalSeconds} s for the processor to stop after {what}");
+        if (first != reached)
         {
-            await processor.StartAsync(CancellationToken.None);
-            var first = await Task.WhenAny(reached, processor.ExecuteTask!).WaitAsync(HangGuard);
-            if (first != reached)
-            {
-                await processor.ExecuteTask!; // rethrows a fault
-                Assert.Fail($"The processor stopped before {what}");
-            }
-        }
-        catch (TimeoutException)
-        {
-            Assert.Fail($"HUNG: waited {HangGuard.TotalSeconds} s for {what}");
-        }
-        finally
-        {
-            await processor.StopAsync(CancellationToken.None);
+            await processor.ExecuteTask!; // rethrows a fault
+            Assert.Fail($"The processor stopped before {what}");
         }
     }
 
