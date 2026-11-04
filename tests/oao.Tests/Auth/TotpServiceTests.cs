@@ -65,6 +65,8 @@ public class TotpServiceTests
         var keyBytes = bytes.ToArray();
 
         // TOTP: 30-second window, 6 digits, HMAC-SHA1
+        // Not a timed test: Identity verifies against its own clock with a +-2-step
+        // window (its functional timer), and it exposes no TimeProvider to inject.
         var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30;
         var counterBytes = BitConverter.GetBytes(counter);
         if (BitConverter.IsLittleEndian) Array.Reverse(counterBytes);

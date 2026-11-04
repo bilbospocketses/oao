@@ -11,6 +11,10 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
 {
     private readonly CustomWebApplicationFactory _factory;
 
+    // Test setup only: the seeded totp-verified token must outlive any slow box.
+    // The product's own 60 s TTL (LoginTotp.razor) is not under test here.
+    private static readonly TimeSpan VerifiedTokenTtl = TimeSpan.FromMinutes(10);
+
     public AuthEndpointTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
@@ -148,7 +152,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "test-valid-token-12345";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id, VerifiedTokenTtl);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -170,7 +174,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "one-time-use-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id, VerifiedTokenTtl);
 
         var client = _factory.CreateNonRedirectClient();
 
@@ -196,7 +200,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "redirect-test-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id, VerifiedTokenTtl);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -219,7 +223,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "double-slash-test-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id, VerifiedTokenTtl);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -242,7 +246,7 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>, IAs
         var admin = await userMgr.FindByNameAsync(CustomWebApplicationFactory.AdminUsername);
 
         var token = "local-redirect-token";
-        cache.Set($"totp-verified:{token}", admin!.Id, TimeSpan.FromSeconds(60));
+        cache.Set($"totp-verified:{token}", admin!.Id, VerifiedTokenTtl);
 
         var client = _factory.CreateNonRedirectClient();
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
