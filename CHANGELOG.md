@@ -8,6 +8,24 @@ Design specs and implementation plans in `superpowers/specs/` and `superpowers/p
 
 ## [Unreleased]
 
+### Fixed (2026-11-04 — timed tests)
+- **Tests no longer fail because the box is slow.** The 11
+  `TtsJobProcessorTests` that start the processor used to link its stopping
+  token to a 500 ms or 3 s timer, so on a loaded machine recovery or the job
+  loop was canceled before it ran and the asserts read untouched state. Each
+  test now runs the processor until the bus event that ends its scenario
+  (the completion notification, the job's `Failed` or `Processing` status),
+  with a 120 s guard that fails as `HUNG: ...` and names the event it waited
+  for. Proven both ways: a 4 s delay at the top of `ExecuteAsync` failed all
+  11 old tests and passes all 11 new ones, and six product mutations each
+  fail the tests that cover them.
+- `AuthEndpointTests` seeds its `totp-verified:` tokens with a 10-minute
+  test-setup TTL instead of 60 s, so a stalled run cannot expire one
+  mid-test. The product's own 60 s TTL is unchanged and not under test there.
+- `TotpServiceTests` carries a comment saying why it is not a timed test:
+  Identity verifies codes against its own clock with a ±2-step window and
+  offers no clock to inject.
+
 ### Fixed (2026-06-04 — net10 CI follow-up)
 - **Data-Protection certificate provisioning is now race-safe.**
   `Program.ConfigurePlatformKeyProtection` writes `dp-key-protection.pfx`
